@@ -22,13 +22,14 @@ EA = salesforceEinsteinAnalytics(env_url='https://yourinstance.my.salesforce.com
 Running a SAQL Query.
 For details on running SAQL querys you can find the documentation on the [salesforce developer site.](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_saql.meta/bi_dev_guide_saql/)
 ```
-saql = '''q = load "DatasetAPIName";
-				q = filter q by date('data_dt_Year', 'data_dt_Month', 'data_dt_Day') in ["current month".."current month"];
-				q = group q by ('dimension1', 'dimension2');
-				q = foreach q generate 'dimension1', 'dimension2', sum('metric') as 'metric', unique('id') as 'id_count';
-				q = order q by 'metric' desc;
-				q = limit q 2000;
-	'''
+saql = '''
+q = load "DatasetAPIName";
+q = filter q by date('data_dt_Year', 'data_dt_Month', 'data_dt_Day') in ["current month".."current month"];
+q = group q by ('dimension1', 'dimension2');
+q = foreach q generate 'dimension1', 'dimension2', sum('metric') as 'metric', unique('id') as 'id_count';
+q = order q by 'metric' desc;
+q = limit q 2000;
+'''
 
 result = EA.run_saql_query(saql=saql)
 print(result.head())
@@ -57,4 +58,45 @@ EA.restore_previous_dashboard_version(dashboard_id='DASHBOARD ID', version_num=1
 
 #Restore previous version of a dashboard
 EA.restore_previous_dashboard_version(dashboard_id='DASHBOARD ID', version_num=1)
+```
+  
+  
+Lastly, there are functions that you can use to update access in Einstein Analytics apps.  There are 4 different options for updating access.
+
+* **addNewUsers:** This will take the existing users and add the new users provided in the dictionary.
+* **removeUsers:** You only need to supply the "sharedWithId: userId" and this will remove those of users.
+* **updateUsers:** The input format is the same as what is needed for addNewUsers.  You will just need to change the accessType.
+* **fullReplaceAccess:** Dictionary is in the same format as what is passed when adding a new user if you want to replace the entire access.  You will just use fullReplaceAccess as the update_type. ***Be careful with this as it will erase all existing access and only update with what you have included in the user_dict.***
+
+```
+#Example of how to add new users to your app.  
+users_to_add = [
+					{
+						"accessType": "view",
+						"shareType": "user",
+						"sharedWithId": "USERID"
+					}
+				]
+
+EA.update_app_access(user_dict=users_to_add, app_id='APPID', update_type='addNewUsers')
+
+#Example of how to remove a user from your app
+users_to_remove = [
+					{
+						"sharedWithId": "USERID"
+					}
+				]
+
+EA.update_app_access(user_dict=users_to_remove, app_id='APPID', update_type='removeUsers')
+
+#Example of updating access for a user
+users_to_update = [
+					{
+						"accessType": "edit",
+						"shareType": "user",
+						"sharedWithId": "USERID"
+					}
+				]
+
+EA.update_app_access(user_dict=users_to_update, app_id='APPID', update_type='updateUsers')
 ```
