@@ -7,14 +7,14 @@ Python package for working with the [Einstein Analytics API](https://developer.s
 
 
 ## Install ##
-```
+```bash
 pip install SalesforceEinsteinAnalytics
 ```
 
 ## Usage ##
 
 To get started you will need to log into Einstein Analytics in Chrome or Firefox.  This package uses a live session to make API requests.  To create an instance of the function you will need to define your browser and supply an environment URL.
-```
+```python
 import SalesforceEinsteinAnalytics as EA
 EA = EA.salesforceEinsteinAnalytics(env_url='https://yourinstance.my.salesforce.com', browser='chrome')
 ```
@@ -22,7 +22,7 @@ EA = EA.salesforceEinsteinAnalytics(env_url='https://yourinstance.my.salesforce.
   
 Running a SAQL Query.
 For details on running SAQL querys you can find the documentation on the [salesforce developer site.](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_saql.meta/bi_dev_guide_saql/)
-```
+```python
 saql = '''
 q = load "DatasetAPIName";
 q = filter q by date('data_dt_Year', 'data_dt_Month', 'data_dt_Day') in ["current month".."current month"];
@@ -38,7 +38,7 @@ print(result.head())
   
   
 You can also get a dataframe of the user permissions for a specific app.  Providing a save_path will save the dataframe as a CSV.  If a save_path is not provided it will just return a dataframe.
-```
+```python
 app_user_df = EA.get_app_user_list(app_id=['APP ID'], save_path='C:\\Users\\username\\Documents\\App_User_List.csv')
 print(app_user_df.head())
 
@@ -49,7 +49,7 @@ print(all_apps_user_df.head())
   
   
 To restore a dashboard to a previous version you can use the restore_previous_dashboard_version function and following examples.  The first example will return a dataframe showing the history versions available.  It is generally good to review this file first to view which version you want to restore.  To inspect the JSON of a previous version you can use the second example.  The third example can then be used to revert a dashboard to a previous version.
-```
+```python
 #View dashboard History
 history_df = EA.restore_previous_dashboard_version(dashboard_id='DASHBOARD ID')
 history_df.to_csv('C:\\Users\\username\\Documents\\dash_version_history.csv', index=False)
@@ -69,7 +69,7 @@ Lastly, there are functions that you can use to update access in Einstein Analyt
 * **updateUsers:** The input format is the same as what is needed for addNewUsers.  You will just need to change the accessType.
 * **fullReplaceAccess:** Dictionary is in the same format as what is passed when adding a new user if you want to replace the entire access.  You will just use fullReplaceAccess as the update_type. ***Be careful with this as it will erase all existing access and only update with what you have included in the user_dict.***
 
-```
+```python
 #Example of how to add new users to your app.  
 users_to_add = [
 					{
