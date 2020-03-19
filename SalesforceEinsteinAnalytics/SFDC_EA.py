@@ -404,4 +404,4 @@ class salesforceEinsteinAnalytics(object):
 
 if __name__ == '__main__':	
 	#Basic Example of the usage of this function
-	#EA = salesforceEinsteinAnalytics(env_url='YOUR SALESFORCE ENVIRONMENT URL', browser='chrome')
+	EA = salesforceEinsteinAnalytics(env_url='YOUR SALESFORCE ENVIRONMENT URL', browser='chrome')
