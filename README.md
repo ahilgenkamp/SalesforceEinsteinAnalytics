@@ -8,14 +8,14 @@ Python package for working with the [Einstein Analytics API](https://developer.s
 
 ## Install ##
 ```
-pip install SalesforceEinsteinAnalytics
+pip install SalesforceEinsteinAnalytics as EA
 ```
 
 ## Usage ##
 
 To get started you will need to log into Einstein Analytics in Chrome or Firefox.  This package uses a live session to make API requests.  To create an instance of the function you will need to define your browser and supply an environment URL.
 ```
-EA = salesforceEinsteinAnalytics(env_url='https://yourinstance.my.salesforce.com', browser='chrome')
+EA = EA.salesforceEinsteinAnalytics(env_url='https://yourinstance.my.salesforce.com', browser='chrome')
 ```
   
   
