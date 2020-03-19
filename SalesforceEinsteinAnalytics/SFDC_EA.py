@@ -402,67 +402,6 @@ class salesforceEinsteinAnalytics(object):
 		pass
 
 
-if __name__ == '__main__':
-	
+if __name__ == '__main__':	
 	#Basic Example of the usage of this function
-	#EA = salesforceEinsteinAnalytics(env_url='YOUR SALESFORCE ENVIRONMENT URL', browser='chrome') #choose browser you are using.  Only Chrome and Firefox are supported at the moment.
-	
-	#Example query looks at top dashboard views and number of users for the current month.  This is in the UI SAQL format.  The JSON format will work too.
-	saql = '''q = load "pds_scrcrd_piq_adoption";
-				q = filter q by date('data_dt_Year', 'data_dt_Month', 'data_dt_Day') in ["current month".."current month"];
-				q = group q by ('app_name', 'lens_name', 'base_route');
-				q = foreach q generate 'app_name' as 'app_name', 'lens_name' as 'lens_name', 'base_route' as 'base_route', sum('views') as 'sum_views', unique('usr_id') as 'unique_usr_id';
-				q = order q by 'sum_views' desc;
-				q = limit q 2000;
-	'''
-
-	'''
-	result = EA.run_saql_query(saql=saql)
-	print(result)
-
-	#Example of app access list
-	app_user_df = EA.get_app_user_list(app_id=['APP ID'], save_path='C:\\Users\\username\\Documents\\App_User_List.csv')
-	print(app_user_df)
-
-	#View dashboard History
-	history_df = EA.restore_previous_dashboard_version(dashboard_id='DASHBOARD ID')
-	history_df.to_csv('C:\\Users\\username\\Documents\\dash_version_history.csv', index=False)
-
-	#Get JSON of previous version to review
-	EA.restore_previous_dashboard_version(dashboard_id='DASHBOARD ID', version_num=1, save_json_path='C:\\Users\\username\\Documents\\jsonFile.json')
-
-	#Restore previous version of a dashboard
-	EA.restore_previous_dashboard_version(dashboard_id='DASHBOARD ID', version_num=1)
-
-	#Example of how to add new users to your app.  Dictionary is in the same format if you want to replace the entire access.  just pass fullReplaceAccess but be careful with this one.
-	users_to_add = [
-						{
-							"accessType": "view",
-							"shareType": "user",
-							"sharedWithId": "USERID"
-						}
-					]
-
-	EA.update_app_access(user_dict=users_to_add, app_id='APPID', update_type='addNewUsers')
-	
-
-	#Example of how to remove a user from your app
-	users_to_remove = [
-						{
-							"sharedWithId": "USERID"
-						}
-					]
-
-	EA.update_app_access(user_dict=users_to_remove, app_id='APPID', update_type='removeUsers')
-
-	#Example of updating access for a user
-	users_to_update = [
-						{
-							"accessType": "edit",
-							"shareType": "user",
-							"sharedWithId": "USERID"
-						}
-					]
-
-	EA.update_app_access(user_dict=users_to_update, app_id='APPID', update_type='updateUsers')
-	'''
+	#EA = salesforceEinsteinAnalytics(env_url='YOUR SALESFORCE ENVIRONMENT URL', browser='chrome')
