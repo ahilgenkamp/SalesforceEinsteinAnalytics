@@ -17,7 +17,8 @@ To get started you will need to log into Einstein Analytics in Chrome or Firefox
 ```
 EA = salesforceEinsteinAnalytics(env_url='https://yourinstance.my.salesforce.com', browser='chrome')
 ```
-
+  
+  
 Running a SAQL Query.
 For details on running SAQL querys you can find the documentation on the [salesforce developer site.](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_saql.meta/bi_dev_guide_saql/)
 ```
@@ -30,5 +31,30 @@ saql = '''q = load "DatasetAPIName";
 	'''
 
 result = EA.run_saql_query(saql=saql)
-print(result)
+print(result.head())
+```
+  
+  
+You can also get a dataframe of the user permissions for a specific app.  Providing a save_path will save the dataframe as a CSV.  If a save_path is not provided it will just return a dataframe.
+```
+app_user_df = EA.get_app_user_list(app_id=['APP ID'], save_path='C:\\Users\\username\\Documents\\App_User_List.csv')
+print(app_user_df.head())
+
+#if no app_id list is added to the function it will return the access list for all apps.
+all_apps_user_df = EA.get_app_user_list(save_path='C:\\Users\\username\\Documents\\All_Apps_User_List.csv')
+print(all_apps_user_df.head())
+```
+  
+  
+To restore a dashboard to a previous version you can use the restore_previous_dashboard_version function and following examples.  The first example will return a dataframe showing the history versions available.  It is generally good to review this file first to view which version you want to restore.  To inspect the JSON of a previous version you can use the second example.  The third example can then be used to revert a dashboard to a previous version.
+```
+#View dashboard History
+history_df = EA.restore_previous_dashboard_version(dashboard_id='DASHBOARD ID')
+history_df.to_csv('C:\\Users\\username\\Documents\\dash_version_history.csv', index=False)
+
+#Get JSON of previous version to review
+EA.restore_previous_dashboard_version(dashboard_id='DASHBOARD ID', version_num=1, save_json_path='C:\\Users\\username\\Documents\\jsonFile.json')
+
+#Restore previous version of a dashboard
+EA.restore_previous_dashboard_version(dashboard_id='DASHBOARD ID', version_num=1)
 ```
