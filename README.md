@@ -8,7 +8,7 @@ Python package for working with the [Einstein Analytics API](https://developer.s
 
 ## Install ##
 ```
-pip3 install SalesforceEinsteinAnalytics
+pip install SalesforceEinsteinAnalytics
 ```
 
 ## Usage ##
