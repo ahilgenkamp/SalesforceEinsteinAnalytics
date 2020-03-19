@@ -72,32 +72,32 @@ Lastly, there are functions that you can use to update access in Einstein Analyt
 ```python
 #Example of how to add new users to your app.  
 users_to_add = [
-					{
-						"accessType": "view",
-						"shareType": "user",
-						"sharedWithId": "USERID"
-					}
-				]
+			{
+				"accessType": "view",
+				"shareType": "user",
+				"sharedWithId": "USERID"
+			}
+		]
 
 EA.update_app_access(user_dict=users_to_add, app_id='APPID', update_type='addNewUsers')
 
 #Example of how to remove a user from your app
 users_to_remove = [
-					{
-						"sharedWithId": "USERID"
-					}
-				]
+			{
+				"sharedWithId": "USERID"
+			}
+		]
 
 EA.update_app_access(user_dict=users_to_remove, app_id='APPID', update_type='removeUsers')
 
 #Example of updating access for a user
 users_to_update = [
-					{
-						"accessType": "edit",
-						"shareType": "user",
-						"sharedWithId": "USERID"
-					}
-				]
+			{
+				"accessType": "edit",
+				"shareType": "user",
+				"sharedWithId": "USERID"
+			}
+		]
 
 EA.update_app_access(user_dict=users_to_update, app_id='APPID', update_type='updateUsers')
 ```
