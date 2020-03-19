@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='SalesforceEinsteinAnalytics',
-    version='0.0.1',
+    version='0.0.2',
     author='Adam Hilgenkamp',
     author_email='ahilgie@gmail.com',
     description='Python package for working with the Einstein Analytics API',
