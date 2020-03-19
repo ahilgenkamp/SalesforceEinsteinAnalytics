@@ -2,8 +2,8 @@
 
 Python package for working with the [Einstein Analytics API](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_rest.meta/bi_dev_guide_rest/bi_rest_overview.htm)
 
-* ***What does it do?*** This package allows you to easily perform several operations that are cumbersome in the Einstein Analytics UI.  It allows you to update app access, run SAQL querys for further exploration in Python, restore old versions of a dashboard and to get app access details so that you can review who has access to your data.
-* ***Which systems are supported?*** Currently this has only been tested on Windows and with Chrome/Firefox browsers
+* ***What does it do?*** This package allows you to easily perform several operations that are cumbersome in the Einstein Analytics UI.  It allows you to update app access, run SAQL queries for further exploration in Python, restore old versions of a dashboard and to get app access details so that you can review who has access to your data.
+* ***Which systems are supported?*** Currently, this has only been tested on Windows and with Chrome/Firefox browsers
 
 
 ## Install ##
