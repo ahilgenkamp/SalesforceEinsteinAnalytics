@@ -46,7 +46,7 @@ df = pd.DataFrame({'key': ['foo', 'bar', 'baz', 'foo'],
 
 EA.load_df_to_EA(df, "TEST_DATASET", verbose=True)
 ```
-You can also supply your own xmd file in order to specify things like fiscal offsets.  
+You can also supply your own xmd/metadata file in order to specify things like fiscal offsets.  More information on the metadata format and structure can be found on the [Salesforce developer site.](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_ext_data_format.meta/bi_dev_guide_ext_data_format/bi_ext_data_schema_overview.htm)
 ```python
 
 df = pd.DataFrame({'key': ['foo', 'bar', 'baz', 'foo'],
