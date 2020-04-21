@@ -2,7 +2,9 @@
 
 Python package for working with the [Einstein Analytics API](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_rest.meta/bi_dev_guide_rest/bi_rest_overview.htm)
 
-* ***What does it do?*** This package allows you to easily perform several operations that are cumbersome in the Einstein Analytics UI.  It allows you to update app access, run SAQL queries for further exploration in Python, restore old versions of a dashboard and to get app access details so that you can review who has access to your data.
+***NEW FEATURE:*** Upload dataframes to EA as a CSV.  This allows you to do things like run python based machine learning models and upload or update the data in Einstein Analytics for visualization or dashboards.
+
+* ***What does it do?*** This package allows you to easily perform several operations that are cumbersome in the Einstein Analytics UI.  It allows you to update app access, run SAQL queries for further exploration in Python, upload dataframes, and restore old versions of a dashboard and to get app access details so that you can review who has access to your data.
 * ***Which systems are supported?*** Currently, this has only been tested on Windows and with Chrome/Firefox browsers
 
 
@@ -20,8 +22,8 @@ EA = EA.salesforceEinsteinAnalytics(env_url='https://yourinstance.my.salesforce.
 ```
   
   
-Running a SAQL Query.
-For details on running SAQL querys you can find the documentation on the [salesforce developer site.](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_saql.meta/bi_dev_guide_saql/)
+Running a SAQL query is simple and allows you to play with data that lives in Einstein Analytics.
+For details on running SAQL queries you can find the documentation on the [salesforce developer site.](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_saql.meta/bi_dev_guide_saql/)
 ```python
 saql = '''
 q = load "DatasetAPIName";
@@ -34,6 +36,54 @@ q = limit q 2000;
 
 result = EA.run_saql_query(saql=saql)
 print(result.head())
+```
+  
+The ```load_df_to_EA()``` function allows you to easily load a dataframe to Einstein Analytics.  The simple usage is to pass the dataframe to the function with either the api name of an existing dataset or the new name for your dataset (new datasets will be loaded to your private app). An xmd file will be created using the datatypes from the supplied dataframe. 
+```python
+
+df = pd.DataFrame({'key': ['foo', 'bar', 'baz', 'foo'],
+                   'value': [1, 2, 3, 5]})
+
+EA.load_df_to_EA(df, "TEST_DATASET", verbose=True)
+```
+You can also supply your own xmd file in order to specify things like fiscal offsets.  
+```python
+
+df = pd.DataFrame({'key': ['foo', 'bar', 'baz', 'foo'],
+                   'value': [1, 2, 3, 5]})
+
+xmd = {
+	"fileFormat": {
+		"charsetName": "UTF-8",
+		"fieldsDelimitedBy": ",",
+		"fieldsEnclosedBy": "\"",
+		"linesTerminatedBy": "\r\n"
+	},
+	"objects": [{
+		"connector": "CSV",
+		"fullyQualifiedName": "TEST_DATASET",
+		"label": "TEST_DATASET",
+		"name": "TEST_DATASET",
+		"fields": [{
+			"fullyQualifiedName": "key",
+			"name": "key",
+			"type": "Text",
+			"label": "key"
+		}, {
+			"fullyQualifiedName": "value",
+			"name": "value",
+			"type": "Numeric",
+			"label": "value",
+			"precision": 18,
+			"defaultValue": "0",
+			"scale": 2,
+			"format": "0.0#",
+			"decimalSeparator": "."
+		}]
+	}]
+}
+
+EA.load_df_to_EA(df, "TEST_DATASET", xmd=xmd, verbose=True)
 ```
   
   
