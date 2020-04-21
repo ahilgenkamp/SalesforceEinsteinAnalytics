@@ -15,6 +15,7 @@ import base64
 import csv
 import unicodecsv
 from unidecode import unidecode
+import math
 
 
 class salesforceEinsteinAnalytics(object):
@@ -403,32 +404,38 @@ class salesforceEinsteinAnalytics(object):
 
 		for c in columns:
 			if df[c].dtype == "O":
-				df[c].fillna('NONE', inplace=True)
 				df[c] = df[c].apply(lambda x: unidecode(x).replace("?",""))
 
 
-	def create_xmd(self, df, dataset_label, default_measure_val="0.0", default_measure_fmt="0.0#####", charset="UTF-8", deliminator=",", lineterminator="\r\n"):
+	def create_xmd(self, df, dataset_label, useNumericDefaults=True, default_measure_val="0.0", default_measure_fmt="0.0#", charset="UTF-8", deliminator=",", lineterminator="\r\n"):
 		dataset_label = dataset_label
 		dataset_api_name = dataset_label.replace(" ","_")
 
 		fields = []
 		for c in df.columns:
 			if df[c].dtype == "datetime64[ns]":
-				c.replace(" ","_")
+				name = c.replace(" ","_")
+				name = name.replace("__","_")
 				date = {
-					"fullyQualifiedName": c.replace(" ","_"),
-					"name": c.replace(" ","_"),
+					"fullyQualifiedName": name,
+					"name": name,
 					"type": "Date",
 					"label": c,
 					"format": "yyyy-MM-dd HH:mm:ss"
 				}
 				fields.append(date)
 			elif np.issubdtype(df[c].dtype, np.number):
-				precision = df[c].astype('str').apply(lambda x: len(x.replace('.', ''))).max()
-				scale = -df[c].astype('str').apply(lambda x: Decimal(x).as_tuple().exponent).min()
+				if useNumericDefaults == True:
+					precision = 18
+					scale = 2
+				elif useNumericDefaults == False:
+					precision = df[c].astype('str').apply(lambda x: len(x.replace('.', ''))).max()
+					scale = -df[c].astype('str').apply(lambda x: Decimal(x).as_tuple().exponent).min()
+				name = c.replace(" ","_")
+				name = name.replace("__","_")
 				measure = {
-					"fullyQualifiedName": c.replace(" ","_"),
-					"name": c.replace(" ","_"),
+					"fullyQualifiedName": name,
+					"name": name,
 					"type": "Numeric",
 					"label": c,
 					"precision": precision,
@@ -439,9 +446,11 @@ class salesforceEinsteinAnalytics(object):
 				}
 				fields.append(measure)
 			else:
+				name = c.replace(" ","_")
+				name = name.replace("__","_")
 				dimension = {
-					"fullyQualifiedName": c.replace(" ","_"),
-					"name": c.replace(" ","_"),
+					"fullyQualifiedName": name,
+					"name": name,
 					"type": "Text",
 					"label": c
 				}
@@ -467,7 +476,8 @@ class salesforceEinsteinAnalytics(object):
 
 
 
-	def load_df_to_EA(self, df, dataset_api_name, xmd=None, encoding='UTF-8', operation='Overwrite', removeNONascii=True, ascii_columns=None, dataset_label=None, verbose=False):
+	def load_df_to_EA(self, df, dataset_api_name, xmd=None, encoding='UTF-8', operation='Overwrite', useNumericDefaults=True, default_measure_val="0.0", 
+		default_measure_fmt="0.0#", charset="UTF-8", deliminator=",", lineterminator="\r\n", removeNONascii=True, ascii_columns=None, fillna=True, dataset_label=None, verbose=False):
 		'''
 			field names will show up exactly as the column names in the supplied dataframe
 		'''
@@ -479,18 +489,28 @@ class salesforceEinsteinAnalytics(object):
 
 		dataset_api_name = dataset_api_name.replace(" ","_")
 
+		if fillna == True:
+			for c in df.columns:
+				if df[c].dtype == "O":
+					df[c].fillna('NONE', inplace=True)
+				elif np.issubdtype(df[c].dtype, np.number):
+					df[c].fillna(0, inplace=True)
+				elif df[c].dtype == "datetime64[ns]":
+					df[c].fillna(pd.to_datetime('1900-01-01 00:00:00'), inplace=True)
+
+
 		if ascii_columns is not None:
 			self.remove_non_ascii(df, columns=ascii_columns)
-		else:
+		elif removeNONascii == True:
 			self.remove_non_ascii(df)
-		data64 = base64.urlsafe_b64encode(df.to_csv(index=False).encode(encoding)).decode()
-		
 
+		
 		# Upload Config Steps
 		if xmd is not None:
 			xmd64 = base64.urlsafe_b64encode(json.dumps(xmd).encode(encoding)).decode()
 		else:
-			xmd64 = base64.urlsafe_b64encode(self.create_xmd(df, dataset_api_name).encode(encoding)).decode()
+			xmd64 = base64.urlsafe_b64encode(self.create_xmd(df, dataset_api_name, useNumericDefaults=useNumericDefaults, default_measure_val=default_measure_val, 
+				default_measure_fmt=default_measure_fmt, charset=charset, deliminator=deliminator, lineterminator=lineterminator).encode(encoding)).decode()
 
 
 		upload_config = {
@@ -503,27 +523,51 @@ class salesforceEinsteinAnalytics(object):
 
 
 		r1 = requests.post(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalData', headers=self.header, data=json.dumps(upload_config))
-		if json.loads(r1.text)['success'] != True: 
+		try:
+			json.loads(r1.text)['success'] == True
+		except: 
 			print('ERROR: Upload Config Failed')
 			print(r1.text)
 			sys.exit(1)
-		elif verbose == True:
+		if verbose == True:
 			print('Upload Configuration Complete...')
 			print('Chunking and Uploading Data Parts...')
 
-		# Data Part Creation and Upload
-		datapart_payload = {
-							"InsightsExternalDataId" : json.loads(r1.text)['id'],
-							"PartNumber" : "1",
-							"DataFile" : data64
-						}
+		
+		MAX_FILE_SIZE = 10 * 1000 * 1000 - 49
+		df_memory = sys.getsizeof(df)
+		rows_in_part = math.ceil(df.shape[0] / math.ceil(df_memory / MAX_FILE_SIZE))
 
-		r2 = requests.post(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalDataPart', headers=self.header, data=json.dumps(datapart_payload))
-		if json.loads(r2.text)['success'] != True: 
+		partnum = 0
+		range_start = 0
+		max_data_part = rows_in_part
+		for chunk in range(0, math.ceil(df_memory / MAX_FILE_SIZE)):
+			df_part = df.iloc[range_start:max_data_part,:]
+			if chunk == 0:
+				data_part64 = base64.b64encode(df_part.to_csv(index=False, quotechar='"', quoting=csv.QUOTE_MINIMAL).encode('UTF-8')).decode()
+			else:
+				data_part64 = base64.b64encode(df_part.to_csv(index=False, header=False, quotechar='"',quoting=csv.QUOTE_MINIMAL).encode('UTF-8')).decode()
+			
+			range_start += rows_in_part
+			max_data_part += rows_in_part
+			partnum += 1
+			if verbose == True:
+				print('Size of chunk '+str(chunk)+': '+str(sys.getsizeof(data_part64)))
+
+			payload = {
+				"InsightsExternalDataId" : json.loads(r1.text)['id'],
+				"PartNumber" : str(partnum),
+				"DataFile" : data_part64
+			}
+
+			r2 = requests.post(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalDataPart', headers=self.header, data=json.dumps(payload))
+		try:
+			json.loads(r2.text)['success'] == True
+		except: 
 			print('ERROR: Datapart Upload Failed')
 			print(r2.text)
 			sys.exit(1)
-		elif verbose == True:
+		if verbose == True:
 			print('Datapart Upload Complete...')
 
 
@@ -535,6 +579,7 @@ class salesforceEinsteinAnalytics(object):
 		if verbose == True:
 			end = time.time()
 			print('Data Upload Process Started. Check Progress in Data Monitor.')
+			print('Job ID: '+str(json.loads(r1.text)['id']))
 			print('Completed in '+str(round(end-start,3))+'sec')
 
 
