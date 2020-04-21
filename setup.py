@@ -11,8 +11,7 @@ requirements = [
     'pandas',
     'numpy',
     'requests',
-    'datetime',
-    'dateutil'
+    'datetime'
 ]
     
 setup(
