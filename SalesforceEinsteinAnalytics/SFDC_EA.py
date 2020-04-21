@@ -552,7 +552,7 @@ class salesforceEinsteinAnalytics(object):
 			max_data_part += rows_in_part
 			partnum += 1
 			if verbose == True:
-				print('Size of chunk '+str(chunk)+': '+str(sys.getsizeof(data_part64)))
+				print('Chunk '+str(chunk)+' of '+str(math.ceil(df_memory / MAX_FILE_SIZE))+' completed', end='', flush=True)
 
 			payload = {
 				"InsightsExternalDataId" : json.loads(r1.text)['id'],
