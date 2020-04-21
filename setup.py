@@ -4,6 +4,14 @@ from distutils.core import setup
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+requirements = [
+    'browser_cookie3',
+    'unicodecsv',
+    'unidecode',
+    'pandas',
+    'numpy'
+]
+    
 setup(
     name='SalesforceEinsteinAnalytics',
     version='0.0.3',
