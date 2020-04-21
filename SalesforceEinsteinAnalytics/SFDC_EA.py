@@ -1,6 +1,4 @@
 #Python wrapper / library for Einstein Analytics API
-
-import os
 import sys
 import browser_cookie3
 import requests
@@ -12,6 +10,11 @@ import pandas as pd
 import numpy as np
 import re
 from pandas import json_normalize
+from decimal import Decimal
+import base64
+import csv
+import unicodecsv
+from unidecode import unidecode
 
 
 class salesforceEinsteinAnalytics(object):
@@ -297,7 +300,6 @@ class salesforceEinsteinAnalytics(object):
 		'''
 		if verbose == True:
 			start = time.time()
-			progress_counter = 0
 			print('Updating App Access...')
 			print('Process started at: '+str(self.get_local_time()))
 		
@@ -393,15 +395,148 @@ class salesforceEinsteinAnalytics(object):
 		'''
 		pass
 
+	def remove_non_ascii(self, df, columns=None):
+		if columns == None:
+			columns = df.columns
+		else:
+			columns = columns
 
-	def load_csv_to_EA(self, df, xmd):
+		for c in columns:
+			if df[c].dtype == "O":
+				df[c].fillna('NONE', inplace=True)
+				df[c] = df[c].apply(lambda x: unidecode(x).replace("?",""))
+
+
+	def create_xmd(self, df, dataset_label, default_measure_val="0.0", default_measure_fmt="0.0#####", charset="UTF-8", deliminator=",", lineterminator="\r\n"):
+		dataset_label = dataset_label
+		dataset_api_name = dataset_label.replace(" ","_")
+
+		fields = []
+		for c in df.columns:
+			if df[c].dtype == "datetime64[ns]":
+				c.replace(" ","_")
+				date = {
+					"fullyQualifiedName": c.replace(" ","_"),
+					"name": c.replace(" ","_"),
+					"type": "Date",
+					"label": c,
+					"format": "yyyy-MM-dd HH:mm:ss"
+				}
+				fields.append(date)
+			elif np.issubdtype(df[c].dtype, np.number):
+				precision = df[c].astype('str').apply(lambda x: len(x.replace('.', ''))).max()
+				scale = -df[c].astype('str').apply(lambda x: Decimal(x).as_tuple().exponent).min()
+				measure = {
+					"fullyQualifiedName": c.replace(" ","_"),
+					"name": c.replace(" ","_"),
+					"type": "Numeric",
+					"label": c,
+					"precision": precision,
+					"defaultValue": default_measure_val,
+					"scale": scale,
+					"format": default_measure_fmt,
+					"decimalSeparator": "."
+				}
+				fields.append(measure)
+			else:
+				dimension = {
+					"fullyQualifiedName": c.replace(" ","_"),
+					"name": c.replace(" ","_"),
+					"type": "Text",
+					"label": c
+				}
+				fields.append(dimension)
+
+		xmd = {
+			"fileFormat": {
+							"charsetName": charset,
+							"fieldsDelimitedBy": deliminator,
+							"linesTerminatedBy": lineterminator
+						},
+			"objects": [
+						{
+							"connector": "CSV",
+							"fullyQualifiedName": dataset_api_name,
+							"label": dataset_label,
+							"name": dataset_api_name,
+							"fields": fields
+						}
+					]
+				}       
+		return str(xmd).replace("'",'"')
+
+
+
+	def load_df_to_EA(self, df, dataset_api_name, xmd=None, encoding='UTF-8', operation='Overwrite', removeNONascii=True, ascii_columns=None, dataset_label=None, verbose=False):
 		'''
-			API Documentation: https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_ext_data.meta/bi_dev_guide_ext_data/bi_ext_data_configure_upload.htm
-			Might work on this but doesn't seem to be demand for this at the moment.  Let me know and I can add it.
+			field names will show up exactly as the column names in the supplied dataframe
 		'''
-		pass
+
+		if verbose == True:
+			start = time.time()
+			print('Loading Data to Einstein Analytics...')
+			print('Process started at: '+str(self.get_local_time()))
+
+		dataset_api_name = dataset_api_name.replace(" ","_")
+
+		if ascii_columns is not None:
+			self.remove_non_ascii(df, columns=ascii_columns)
+		else:
+			self.remove_non_ascii(df)
+		data64 = base64.urlsafe_b64encode(df.to_csv(index=False).encode(encoding)).decode()
+		
+
+		# Upload Config Steps
+		if xmd is not None:
+			xmd64 = base64.urlsafe_b64encode(json.dumps(xmd).encode(encoding)).decode()
+		else:
+			xmd64 = base64.urlsafe_b64encode(self.create_xmd(df, dataset_api_name).encode(encoding)).decode()
+
+
+		upload_config = {
+						'Format' : 'CSV',
+						'EdgemartAlias' : dataset_api_name,
+						'Operation' : operation,
+						'Action' : 'None',
+						'MetadataJson': xmd64
+					}
+
+
+		r1 = requests.post(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalData', headers=self.header, data=json.dumps(upload_config))
+		if json.loads(r1.text)['success'] != True: 
+			print('ERROR: Upload Config Failed')
+			print(r1.text)
+			sys.exit(1)
+		elif verbose == True:
+			print('Upload Configuration Complete...')
+			print('Chunking and Uploading Data Parts...')
+
+		# Data Part Creation and Upload
+		datapart_payload = {
+							"InsightsExternalDataId" : json.loads(r1.text)['id'],
+							"PartNumber" : "1",
+							"DataFile" : data64
+						}
+
+		r2 = requests.post(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalDataPart', headers=self.header, data=json.dumps(datapart_payload))
+		if json.loads(r2.text)['success'] != True: 
+			print('ERROR: Datapart Upload Failed')
+			print(r2.text)
+			sys.exit(1)
+		elif verbose == True:
+			print('Datapart Upload Complete...')
+
+
+		payload = {
+					"Action" : "Process"
+				}
+
+		r3 = requests.patch(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalData/'+json.loads(r1.text)['id'], headers=self.header, data=json.dumps(payload))
+		if verbose == True:
+			end = time.time()
+			print('Data Upload Process Started. Check Progress in Data Monitor.')
+			print('Completed in '+str(round(end-start,3))+'sec')
 
 
 if __name__ == '__main__':	
-	#Basic Example of the usage of this function
-	EA = salesforceEinsteinAnalytics(env_url='YOUR SALESFORCE ENVIRONMENT URL', browser='chrome')
+	pass
