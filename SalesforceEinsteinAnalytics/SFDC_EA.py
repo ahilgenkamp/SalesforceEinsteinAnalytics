@@ -552,7 +552,7 @@ class salesforceEinsteinAnalytics(object):
 			max_data_part += rows_in_part
 			partnum += 1
 			if verbose == True:
-				print('\rChunk '+str(chunk+1)+' of '+str(math.ceil(df_memory / MAX_FILE_SIZE)+1)+' completed', end='', flush=True)
+				print('\rChunk '+str(chunk+1)+' of '+str(math.ceil(df_memory / MAX_FILE_SIZE))+' completed', end='', flush=True)
 
 			payload = {
 				"InsightsExternalDataId" : json.loads(r1.text)['id'],
@@ -564,11 +564,11 @@ class salesforceEinsteinAnalytics(object):
 		try:
 			json.loads(r2.text)['success'] == True
 		except: 
-			print('ERROR: Datapart Upload Failed')
+			print('\nERROR: Datapart Upload Failed')
 			print(r2.text)
 			sys.exit(1)
 		if verbose == True:
-			print('Datapart Upload Complete...')
+			print('\nDatapart Upload Complete...')
 
 
 		payload = {
