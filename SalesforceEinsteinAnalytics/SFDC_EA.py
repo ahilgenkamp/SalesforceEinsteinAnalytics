@@ -51,7 +51,7 @@ class salesforceEinsteinAnalytics(object):
 
 	def get_dataset_id(self, dataset_name, search_type='API Name', verbose=False):
 		params = {'pageSize': 50, 'sort': 'Mru', 'hasCurrentOnly': 'true', 'q': dataset_name}
-		dataset_json = requests.get(self.env_url+'/services/data/v46.0/wave/datasets', headers=self.header, params=params) 
+		dataset_json = requests.get(self.env_url+'/services/data/v48.0/wave/datasets', headers=self.header, params=params) 
 		dataset_df = json_normalize(json.loads(dataset_json.text)['datasets'])
 
 		#check if the user wants to seach by API name or label name
@@ -73,7 +73,7 @@ class salesforceEinsteinAnalytics(object):
 			dsid = dataset_df['id'].tolist()[0]
 			
 			#get dataset version ID
-			r = requests.get(self.env_url+'/services/data/v46.0/wave/datasets/'+dsid, headers=self.header)
+			r = requests.get(self.env_url+'/services/data/v48.0/wave/datasets/'+dsid, headers=self.header)
 			dsvid = json.loads(r.text)['currentVersionId']
 			
 			return dsnm, dsid, dsvid 
@@ -113,7 +113,7 @@ class salesforceEinsteinAnalytics(object):
 
 		#run query and return dataframe or save as csv
 		payload = {"query":saql}
-		r = requests.post(self.env_url+'/services/data/v46.0/wave/query', headers=self.header, data=json.dumps(payload) )
+		r = requests.post(self.env_url+'/services/data/v48.0/wave/query', headers=self.header, data=json.dumps(payload) )
 		df = json_normalize(json.loads(r.text)['results']['records'])
 		
 		
@@ -142,7 +142,7 @@ class salesforceEinsteinAnalytics(object):
 			Typically best practice to run the function and view the history first before supplying a version number.
 		'''
 		#get broken dashboard version history
-		r = requests.get(self.env_url+'/services/data/v46.0/wave/dashboards/'+dashboard_id+'/histories', headers=self.header)
+		r = requests.get(self.env_url+'/services/data/v48.0/wave/dashboards/'+dashboard_id+'/histories', headers=self.header)
 		history_df = json_normalize(json.loads(r.text)['histories'])
 			
 		if save_json_path is not None and version_num is not None:
@@ -176,7 +176,7 @@ class salesforceEinsteinAnalytics(object):
 			attempts = 0
 			while attempts < max_request_attempts:
 				try:
-					r = requests.get(self.env_url+'/services/data/v46.0/wave/folders', headers=self.header)
+					r = requests.get(self.env_url+'/services/data/v48.0/wave/folders', headers=self.header)
 					response = json.loads(r.text)
 					total_size = response['totalSize']
 					next_page = response['nextPageUrl']
@@ -193,7 +193,7 @@ class salesforceEinsteinAnalytics(object):
 				attempts = 0
 				while attempts < max_request_attempts:
 					try:
-						r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app["id"], headers=self.header)
+						r = requests.get(self.env_url+'/services/data/v48.0/wave/folders/'+app["id"], headers=self.header)
 						users = json.loads(r.text)['shares']
 						for u in users: 
 							app_user_df = app_user_df.append(	{	"AppId": app['id'], 
@@ -237,7 +237,7 @@ class salesforceEinsteinAnalytics(object):
 				while attempts < max_request_attempts:
 					try:
 						for app in response['folders']:
-							r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app["id"], headers=self.header)
+							r = requests.get(self.env_url+'/services/data/v48.0/wave/folders/'+app["id"], headers=self.header)
 							users = json.loads(r.text)['shares']
 							for u in users: 
 								app_user_df = app_user_df.append(	{	"AppId": app['id'], 
@@ -259,7 +259,7 @@ class salesforceEinsteinAnalytics(object):
 			if type(app_id) is list or type(app_id) is tuple:
 				for app in app_id:
 					app_user_df = pd.DataFrame()
-					r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app, headers=self.header)
+					r = requests.get(self.env_url+'/services/data/v48.0/wave/folders/'+app, headers=self.header)
 					response = json.loads(r.text)
 					for u in response['shares']: 
 						app_user_df = app_user_df.append(	{	"AppId": app, 
@@ -308,7 +308,7 @@ class salesforceEinsteinAnalytics(object):
 			shares = user_dict
 
 		elif update_type == 'addNewUsers':
-			r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app_id, headers=self.header)
+			r = requests.get(self.env_url+'/services/data/v48.0/wave/folders/'+app_id, headers=self.header)
 			response = json.loads(r.text)
 			shares = response['shares']
 			
@@ -326,7 +326,7 @@ class salesforceEinsteinAnalytics(object):
 			shares = shares + user_dict
 
 		elif update_type == 'removeUsers':
-			r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app_id, headers=self.header)
+			r = requests.get(self.env_url+'/services/data/v48.0/wave/folders/'+app_id, headers=self.header)
 			response = json.loads(r.text)
 			shares = response['shares']
 			
@@ -350,7 +350,7 @@ class salesforceEinsteinAnalytics(object):
 					pass
 
 		elif update_type == 'updateUsers':
-			r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app_id, headers=self.header)
+			r = requests.get(self.env_url+'/services/data/v48.0/wave/folders/'+app_id, headers=self.header)
 			response = json.loads(r.text)
 			shares = response['shares']
 			
@@ -380,7 +380,7 @@ class salesforceEinsteinAnalytics(object):
 		
 		if shares is not None:
 			payload = {"shares": shares}
-			r = requests.patch(self.env_url+'/services/data/v46.0/wave/folders/'+app_id, headers=self.header, data=json.dumps(payload))
+			r = requests.patch(self.env_url+'/services/data/v48.0/wave/folders/'+app_id, headers=self.header, data=json.dumps(payload))
 
 
 		if verbose == True:
@@ -522,7 +522,7 @@ class salesforceEinsteinAnalytics(object):
 					}
 
 
-		r1 = requests.post(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalData', headers=self.header, data=json.dumps(upload_config))
+		r1 = requests.post(self.env_url+'/services/data/v48.0/sobjects/InsightsExternalData', headers=self.header, data=json.dumps(upload_config))
 		try:
 			json.loads(r1.text)['success'] == True
 		except: 
@@ -560,7 +560,7 @@ class salesforceEinsteinAnalytics(object):
 				"DataFile" : data_part64
 			}
 
-			r2 = requests.post(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalDataPart', headers=self.header, data=json.dumps(payload))
+			r2 = requests.post(self.env_url+'/services/data/v48.0/sobjects/InsightsExternalDataPart', headers=self.header, data=json.dumps(payload))
 		try:
 			json.loads(r2.text)['success'] == True
 		except: 
@@ -575,7 +575,7 @@ class salesforceEinsteinAnalytics(object):
 					"Action" : "Process"
 				}
 
-		r3 = requests.patch(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalData/'+json.loads(r1.text)['id'], headers=self.header, data=json.dumps(payload))
+		r3 = requests.patch(self.env_url+'/services/data/v48.0/sobjects/InsightsExternalData/'+json.loads(r1.text)['id'], headers=self.header, data=json.dumps(payload))
 		if verbose == True:
 			end = time.time()
 			print('Data Upload Process Started. Check Progress in Data Monitor.')
