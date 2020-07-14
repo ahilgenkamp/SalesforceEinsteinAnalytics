@@ -24,6 +24,10 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 class salesforceEinsteinAnalytics(object):
 	def __init__(self, env_url, browser):
 		self.env_url = env_url
+		self.__version__ = '0.2.2'
+		curr_version = pkg_resources.get_distribution("SalesforceEinsteinAnalytics").version
+		if curr_version != __version__:
+			logging.warning('New version available. Use pip to upgrade.')
 		try:
 		    if browser == 'chrome':
 		        cj = browser_cookie3.chrome(domain_name=env_url[8:]) #remove first 8 characters since browser cookie does not expect "https://"
