@@ -24,15 +24,15 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 logging.basicConfig(format="%(levelname)s: %(message)s")
 
 class salesforceEinsteinAnalytics(object):
-	def __init__(self, env_url, browser, suppressVersionWarn=False):
-		self.setLogLvl()
+	def __init__(self, env_url, browser, logLevel='WARN'):
+		self.setLogLvl(level=logLevel)
 		self.env_url = env_url
 		
 		#Check if package is current version
 		response = requests.get('https://pypi.org/pypi/SalesforceEinsteinAnalytics/json')
 		latest_version = response.json()['info']['version']
 		curr_version = pkg_resources.get_distribution("SalesforceEinsteinAnalytics").version
-		if curr_version != latest_version and suppressVersionWarn==False:
+		if curr_version != latest_version:
 			logging.warning('New version available. Use pip to upgrade.')
 		
 		#get browser cookie to use in request header
@@ -53,11 +53,15 @@ class salesforceEinsteinAnalytics(object):
 		    sys.exit(1)
 
 
-	def setLogLvl(self, verbose=False):
-		if verbose==True:
+	def setLogLvl(self, level='WARN'):
+		if level == 'DEBUG':
+		    logging.getLogger().setLevel(logging.DEBUG)
+		elif level == 'INFO':
 		    logging.getLogger().setLevel(logging.INFO)
-		else:
+		elif level == 'WARN':
 		    logging.getLogger().setLevel(logging.WARN)
+		else:
+			logging.getLogger().setLevel(logging.ERROR)
 
 
 	def get_local_time(self, add_sec=None, timeFORfile=False):
@@ -72,8 +76,6 @@ class salesforceEinsteinAnalytics(object):
 
 
 	def get_dataset_id(self, dataset_name, search_type='API Name', verbose=False):
-		
-		self.setLogLvl(verbose=verbose)
 
 		params = {'pageSize': 50, 'sort': 'Mru', 'hasCurrentOnly': 'true', 'q': dataset_name}
 		dataset_json = requests.get(self.env_url+'/services/data/v46.0/wave/datasets', headers=self.header, params=params) 
@@ -86,7 +88,8 @@ class salesforceEinsteinAnalytics(object):
 			dataset_df = dataset_df[dataset_df['name'] == dataset_name]
 
 		#show user how many matches that they got.  Might want to use exact API name if getting multiple matches for label search.
-		logging.info('Found '+str(dataset_df.shape[0])+' matching datasets.')
+		if verbose == True:
+			print('Found '+str(dataset_df.shape[0])+' matching datasets.')
 
 		#if dataframe is empty then return not found message or return the dataset ID
 		if dataset_df.empty == True:
@@ -109,12 +112,11 @@ class salesforceEinsteinAnalytics(object):
 			The query can be in JSON form or can be in the UI SAQL form
 			load statements must have the appropreate spaces: =_load_\"datasetname\";
 		'''
-		
-		self.setLogLvl(verbose=verbose)
 
-		start = time.time()
-		logging.info('Checking SAQL and Finding Dataset IDs...')
-		logging.info('Process started at: '+str(self.get_local_time()))
+		if verbose == True:
+			start = time.time()
+			print('Checking SAQL and Finding Dataset IDs...')
+			print('Process started at: '+str(self.get_local_time()))
 		
 		saql = saql.replace('\"','\\"') #convert UI saql query to JSON format
 		
@@ -134,7 +136,8 @@ class salesforceEinsteinAnalytics(object):
 		saql = saql.replace('\\"','\"')
 
 		
-		logging.info('Running SAQL Query...')
+		if verbose == True:
+			print('Running SAQL Query...')
 
 		#run query and return dataframe or save as csv
 		payload = {"query":saql}
@@ -143,16 +146,19 @@ class salesforceEinsteinAnalytics(object):
 		
 		
 		if save_path is not None:			
-			logging.info('Saving result to CSV...')		
+			if verbose == True:
+				print('Saving result to CSV...')		
 			df.to_csv(save_path, index=False)
-			end = time.time()
-			logging.info('Dataframe saved to CSV...')
-			logging.info('Completed in '+str(round(end-start,3))+'sec')
+			if verbose == True:
+				end = time.time()
+				print('Dataframe saved to CSV...')
+				print('Completed in '+str(round(end-start,3))+'sec')
 			return df
 
 		else:
-			end = time.time()
-			logging.info('Completed in '+str(round(end-start,3))+'sec')
+			if verbose == True:
+				end = time.time()
+				print('Completed in '+str(round(end-start,3))+'sec')
 			return df
 
 
@@ -181,12 +187,11 @@ class salesforceEinsteinAnalytics(object):
 
 	def get_app_user_list(self, app_id=None, save_path=None, verbose=False, max_request_attempts=3):
 		
-		self.setLogLvl(verbose=verbose)
-		
-		start = time.time()
-		progress_counter = 0
-		logging.info('Getting app user list and access details...')
-		logging.info('Process started at: '+str(self.get_local_time()))
+		if verbose == True:
+			start = time.time()
+			progress_counter = 0
+			print('Getting app user list and access details...')
+			print('Process started at: '+str(self.get_local_time()))
 
 		if app_id is None:
 			'''ALERT: CURRENTLY GETTING AN ERROR FOR ALL APP REQUEST
@@ -232,7 +237,8 @@ class salesforceEinsteinAnalytics(object):
 			attempts = 0 # reset attempts for additional pages
 			while next_page is not None:
 				progress_counter += 25
-				logging.info('Progress: '+str(round(progress_counter/total_size*100,1))+'%')
+				if verbose == True:
+					print('Progress: '+str(round(progress_counter/total_size*100,1))+'%', end='', flush=True)
 
 				while attempts < max_request_attempts:
 					try:
@@ -291,16 +297,19 @@ class salesforceEinsteinAnalytics(object):
 		
 		
 		if save_path is not None:
-			logging.info('Saving result to CSV...')
+			if verbose == True:
+				print('Saving result to CSV...')
 			app_user_df.to_csv(save_path, index=False)
-			end = time.time()
-			logging.info('Dataframe saved to CSV...')
-			logging.info('Completed in '+str(round(end-start,3))+'sec')
+			if verbose == True:
+				end = time.time()
+				print('Dataframe saved to CSV...')
+				print('Completed in '+str(round(end-start,3))+'sec')
 			return app_user_df
 			
 		else: 
-			end = time.time()
-			logging.info('Completed in '+str(round(end-start,3))+'sec')
+			if verbose == True:
+				end = time.time()
+				print('Completed in '+str(round(end-start,3))+'sec')
 			return app_user_df
 
 
@@ -308,11 +317,11 @@ class salesforceEinsteinAnalytics(object):
 		'''
 			update types include:  addNewUsers, fullReplaceAccess, removeUsers, updateUsers
 		'''
-		self.setLogLvl(verbose=verbose)
 
-		start = time.time()
-		logging.info('Updating App Access...')
-		logging.info('Process started at: '+str(self.get_local_time()))
+		if verbose == True:
+			start = time.time()
+			print('Updating App Access...')
+			print('Process started at: '+str(self.get_local_time()))
 		
 		if update_type == 'fullReplaceAccess':
 			shares = user_dict
@@ -392,9 +401,10 @@ class salesforceEinsteinAnalytics(object):
 			payload = {"shares": shares}
 			r = requests.patch(self.env_url+'/services/data/v46.0/wave/folders/'+app_id, headers=self.header, data=json.dumps(payload))
 
-		end = time.time()
-		logging.info('User Access Updated')
-		logging.info('Completed in '+str(round(end-start,3))+'sec')
+		if verbose == True:
+			end = time.time()
+			print('User Access Updated')
+			print('Completed in '+str(round(end-start,3))+'sec')
 
 
 	def update_dashboard_access(self, update_df, update_type, verbose=True):
@@ -402,7 +412,6 @@ class salesforceEinsteinAnalytics(object):
 			Function to make it easier to update access using dashboard names vs finding all apps needed.
 			update dataframe should have the following columns:  Dashboard Id, Access Type, and User Id
 		'''
-		self.setLogLvl(verbose=verbose)
 		pass
 
 
@@ -491,11 +500,10 @@ class salesforceEinsteinAnalytics(object):
 			field names will show up exactly as the column names in the supplied dataframe
 		'''
 
-		self.setLogLvl(verbose=verbose)
-		
-		start = time.time()
-		logging.info('Loading Data to Einstein Analytics...')
-		logging.info('Process started at: '+str(self.get_local_time()))
+		if verbose == True:		
+			start = time.time()
+			print('Loading Data to Einstein Analytics...')
+			print('Process started at: '+str(self.get_local_time()))
 
 		dataset_api_name = dataset_api_name.replace(" ","_")
 
@@ -540,8 +548,9 @@ class salesforceEinsteinAnalytics(object):
 			logging.error(r1.text)
 			sys.exit(1)
 		
-		logging.info('Upload Configuration Complete...')
-		logging.info('Chunking and Uploading Data Parts...')
+		if verbose == True:
+			print('Upload Configuration Complete...')
+			print('Chunking and Uploading Data Parts...')
 
 		
 		MAX_FILE_SIZE = 10 * 1000 * 1000 - 49
@@ -561,7 +570,8 @@ class salesforceEinsteinAnalytics(object):
 			range_start += rows_in_part
 			max_data_part += rows_in_part
 			partnum += 1
-			logging.info('\rChunk '+str(chunk+1)+' of '+str(math.ceil(df_memory / MAX_FILE_SIZE))+' completed', end='', flush=True)
+			if verbose == True:
+				print('\rChunk '+str(chunk+1)+' of '+str(math.ceil(df_memory / MAX_FILE_SIZE))+' completed', end='', flush=True)
 
 			payload = {
 				"InsightsExternalDataId" : json.loads(r1.text)['id'],
@@ -577,7 +587,8 @@ class salesforceEinsteinAnalytics(object):
 			logging.error(r2.text)
 			sys.exit(1)
 		
-		logging.info('\nDatapart Upload Complete...')
+		if verbose == True:
+			print('\nDatapart Upload Complete...')
 
 
 		payload = {
@@ -586,13 +597,14 @@ class salesforceEinsteinAnalytics(object):
 
 		r3 = requests.patch(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalData/'+json.loads(r1.text)['id'], headers=self.header, data=json.dumps(payload))
 		
-		end = time.time()
-		logging.info('Data Upload Process Started. Check Progress in Data Monitor.')
-		logging.info('Job ID: '+str(json.loads(r1.text)['id']))
-		logging.info('Completed in '+str(round(end-start,3))+'sec')
+		if verbose == True:
+			end = time.time()
+			print('Data Upload Process Started. Check Progress in Data Monitor.')
+			print('Job ID: '+str(json.loads(r1.text)['id']))
+			print('Completed in '+str(round(end-start,3))+'sec')
 
 
-	def addArchivePrefix(self, warnList, prefix='[ARCHIVE] ', verbose=False):
+	def addArchivePrefix(self, warnList, prefix='[ARCHIVE] ', removePrefix=False, verbose=False):
 		'''
 		Function to add a warning that an asset will soon be archived.  
 		The name of the dashboard will have the chosen prefix added.
@@ -602,56 +614,71 @@ class salesforceEinsteinAnalytics(object):
 		Adds prefix to existing label so running twice could overwrite original title
 		'''
 
-		self.setLogLvl(verbose=verbose)
-
-		for asset in warnList:
+		for a in range(0,len(warnList)):
 			try:
-				r = requests.get(self.env_url+'/services/data/v46.0/wave/dashboards/'+asset, headers=self.header)
+				r = requests.get(self.env_url+'/services/data/v46.0/wave/dashboards/'+warnList[a], headers=self.header)
 				currentLabel = json.loads(r.text)['label']
-				newLabel = prefix+currentLabel
+				if removePrefix == True:
+					if currentLabel[:len(prefix)] == prefix: #adding check to make sure original lable isn't overwritten
+						newLabel = currentLabel[len(prefix):]
+				else:
+					newLabel = prefix+currentLabel
 				payload = {'label': newLabel[0:79]}
-				r = requests.patch(self.env_url+'/services/data/v46.0/wave/dashboards/'+asset, headers=self.header, data=json.dumps(payload))
+				r = requests.patch(self.env_url+'/services/data/v46.0/wave/dashboards/'+warnList[a], headers=self.header, data=json.dumps(payload))
 				if json.loads(r.text)['label'] == prefix+currentLabel:
-					logging.info('Successfully updated asset name for: '+asset)
+					logging.debug('Successfully updated asset name for: '+warnList[a])
+				if verbose == True:
+						print('Progress: '+str(round(a/len(warnList)*100,1))+'%', end='', flush=True)
 			except:
 				try:
-					r = requests.get(self.env_url+'/services/data/v46.0/wave/lenses/'+asset, headers=self.header)
+					r = requests.get(self.env_url+'/services/data/v46.0/wave/lenses/'+warnList[a], headers=self.header)
 					currentLabel = json.loads(r.text)['label']
-					newLabel = prefix+currentLabel
+					if removePrefix == True:
+						if currentLabel[:len(prefix)] == prefix: #adding check to make sure original lable isn't overwritten
+							newLabel = currentLabel[len(prefix):]
+					else:
+						newLabel = prefix+currentLabel
 					payload = {'label': newLabel[0:79]} #max char len for label = 80
-					r = requests.patch(self.env_url+'/services/data/v46.0/wave/lenses/'+asset, headers=self.header, data=json.dumps(payload))
+					r = requests.patch(self.env_url+'/services/data/v46.0/wave/lenses/'+warnList[a], headers=self.header, data=json.dumps(payload))
+					
+					#debugging code that should be removed
 					if json.loads(r.text)['label'] == prefix+currentLabel:
-						logging.info('Successfully updated asset name for: '+asset)
+						logging.debug('Successfully updated asset name for: '+warnList[a])
+					##########################################
+
+					if verbose == True:
+							print('Progress: '+str(round(a/len(warnList)*100,1))+'%', end='', flush=True)
 				except:
-					logging.warning(' could not update asset label: '+asset)
+					logging.warning(' could not update asset label: '+warnList[a])
 		
 
 	def archiveAssets(self, archiveAppId, ToMoveList, verbose=False):
 		'''
 		ToMoveList can be the Ids for either a dashboard or a lens
 		'''
-		self.setLogLvl(verbose=verbose)
 
 		payload = {'folder': {'id':archiveAppId} }
 
-		for asset in ToMoveList:
+		for a in range(0,len(ToMoveList)):
 			try:
-				r = requests.patch(self.env_url+'/services/data/v46.0/wave/dashboards/'+asset, headers=self.header, data=json.dumps(payload) )
+				r = requests.patch(self.env_url+'/services/data/v46.0/wave/dashboards/'+ToMoveList[a], headers=self.header, data=json.dumps(payload) )
 				if json.loads(r.text)['folder']['id'] == archiveAppId: #check to ensure response has new folder id
-					logging.info('Successfully archived (type=dashboard): '+asset)
+					if verbose == True:
+						print('Progress: '+str(round(a/len(ToMoveList)*100,1))+'%', end='', flush=True)	
+					logging.debug('Successfully archived (type=dashboard): '+ToMoveList[a])
 			except:
 				# if response does not contain the new folder id then try same command for a lens
 				try:
-					r = requests.patch(self.env_url+'/services/data/v46.0/wave/lenses/'+asset, headers=self.header, data=json.dumps(payload) )
+					r = requests.patch(self.env_url+'/services/data/v46.0/wave/lenses/'+ToMoveList[a], headers=self.header, data=json.dumps(payload) )
 					if json.loads(r.text)['folder']['id'] == archiveAppId: #check to ensure response has new folder id
-						logging.info('Successfully archived (type=lens): '+asset)
+						if verbose == True:
+							print('Progress: '+str(round(a/len(ToMoveList)*100,1))+'%', end='', flush=True)
+						logging.debug('Successfully archived (type=lens): '+ToMoveList[a])
 				except:
-					logging.warning(' could not move asset: '+asset)
+					logging.warning(' could not move asset: '+ToMoveList[a])
 
 
 	def getDashboardMetaData(self, appId, max_request_attempts=3, verbose=False):
-		
-		self.setLogLvl(verbose=verbose)
 
 		convertToDateList = ['createdDate','lastModifiedDate','refreshDate']
 		progress_counter = 0
@@ -684,7 +711,8 @@ class salesforceEinsteinAnalytics(object):
 		attempts = 0 # reset attempts for additional pages
 		while next_page is not None:
 			progress_counter += 200
-			logging.info('Progress: '+str(round(progress_counter/total_size*100,1))+'%')
+			if verbose == True:
+				print('Progress: '+str(round(progress_counter/total_size*100,1))+'%', end='', flush=True)
 
 			while attempts < max_request_attempts:
 				try:
@@ -705,8 +733,6 @@ class salesforceEinsteinAnalytics(object):
 
 	def getLensMetaData(self, appId, max_request_attempts=3, verbose=False):
 		
-		self.setLogLvl(verbose=verbose)
-
 		convertToDateList = ['createdDate','lastModifiedDate','refreshDate']
 		progress_counter = 0
 		assets_df = pd.DataFrame()
@@ -738,7 +764,8 @@ class salesforceEinsteinAnalytics(object):
 		attempts = 0 # reset attempts for additional pages
 		while next_page is not None:
 			progress_counter += 200
-			logging.info('Progress: '+str(round(progress_counter/total_size*100,1))+'%')
+			if verbose == True:
+				print('Progress: '+str(round(progress_counter/total_size*100,1))+'%', end='', flush=True)
 
 			while attempts < max_request_attempts:
 				try:
@@ -758,8 +785,6 @@ class salesforceEinsteinAnalytics(object):
 
 
 	def getAllAssetMetaData(self, appIdList, max_request_attempts=3, verbose=False):
-		
-		self.setLogLvl(verbose=verbose)
 
 		allAssets_df = pd.DataFrame()
 
