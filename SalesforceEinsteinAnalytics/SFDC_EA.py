@@ -27,7 +27,7 @@ class salesforceEinsteinAnalytics(object):
 	def __init__(self, env_url, browser, suppressVersionWarn=False):
 		self.setLogLvl()
 		self.env_url = env_url
-		self.__version__ = '0.2.2'
+		self.__version__ = '0.2.3'
 		curr_version = pkg_resources.get_distribution("SalesforceEinsteinAnalytics").version
 		if curr_version != self.__version__ and suppressVersionWarn==False:
 			logging.warning('New version available. Use pip to upgrade.')
