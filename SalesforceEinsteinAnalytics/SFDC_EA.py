@@ -17,16 +17,19 @@ import csv
 import unicodecsv
 from unidecode import unidecode
 import math
+import pkg_resources
 
 #init logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())
+logging.basicConfig(format="%(levelname)s: %(message)s")
 
 class salesforceEinsteinAnalytics(object):
-	def __init__(self, env_url, browser):
+	def __init__(self, env_url, browser, suppressVersionWarn=False):
+		self.setLogLvl()
 		self.env_url = env_url
 		self.__version__ = '0.2.2'
 		curr_version = pkg_resources.get_distribution("SalesforceEinsteinAnalytics").version
-		if curr_version != __version__:
+		if curr_version != self.__version__ and suppressVersionWarn==False:
 			logging.warning('New version available. Use pip to upgrade.')
 		try:
 		    if browser == 'chrome':
@@ -47,9 +50,9 @@ class salesforceEinsteinAnalytics(object):
 
 	def setLogLvl(self, verbose=False):
 		if verbose==True:
-		    logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
+		    logging.getLogger().setLevel(logging.INFO)
 		else:
-		    logging.basicConfig(format="%(levelname)s: %(message)s")
+		    logging.getLogger().setLevel(logging.WARN)
 
 
 	def get_local_time(self, add_sec=None, timeFORfile=False):
@@ -645,6 +648,7 @@ class salesforceEinsteinAnalytics(object):
 		
 		self.setLogLvl(verbose=verbose)
 
+		convertToDateList = ['createdDate','lastModifiedDate','refreshDate']
 		progress_counter = 0
 		assets_df = pd.DataFrame()
 
@@ -666,6 +670,9 @@ class salesforceEinsteinAnalytics(object):
 				attempts += 1
 				logging.warning("Unexpected error:", sys.exc_info()[0])
 				logging.warning("Trying again...")
+		for i in convertToDateList:
+			app_assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
+			app_assets_df[i] = app_assets_df[i].apply(lambda x: pd.to_datetime(x))
 		assets_df = assets_df.append(app_assets_df, ignore_index=True)
 
 		#continue to pull data from next page if found
@@ -684,6 +691,9 @@ class salesforceEinsteinAnalytics(object):
 					attempts += 1
 					logging.warning("Unexpected error:", sys.exc_info()[0])
 					logging.warning("Trying again...")
+			for i in convertToDateList:
+				app_assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
+				app_assets_df[i] = app_assets_df[i].apply(lambda x: pd.to_datetime(x))
 			assets_df = assets_df.append(app_assets_df, ignore_index=True)
 		return assets_df
 
@@ -692,6 +702,7 @@ class salesforceEinsteinAnalytics(object):
 		
 		self.setLogLvl(verbose=verbose)
 
+		convertToDateList = ['createdDate','lastModifiedDate','refreshDate']
 		progress_counter = 0
 		assets_df = pd.DataFrame()
 
@@ -713,6 +724,9 @@ class salesforceEinsteinAnalytics(object):
 				attempts += 1
 				logging.warning("Unexpected error:", sys.exc_info()[0])
 				logging.warning("Trying again...")
+		for i in convertToDateList:
+			app_assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
+			app_assets_df[i] = app_assets_df[i].apply(lambda x: pd.to_datetime(x))
 		assets_df = assets_df.append(app_assets_df, ignore_index=True)
 
 		#continue to pull data from next page if found
@@ -731,6 +745,9 @@ class salesforceEinsteinAnalytics(object):
 					attempts += 1
 					logging.warning("Unexpected error:", sys.exc_info()[0])
 					logging.warning("Trying again...")
+			for i in convertToDateList:
+				app_assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
+				app_assets_df[i] = app_assets_df[i].apply(lambda x: pd.to_datetime(x))
 			assets_df = assets_df.append(app_assets_df, ignore_index=True)
 		return assets_df
 
