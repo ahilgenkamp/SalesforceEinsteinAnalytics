@@ -101,7 +101,7 @@ print(all_apps_user_df.head())
 
 To help manage dashboards and lenses in apps that you manage there are several functions that may be useful to monitor and archive assets.  Currently, there are five functions that can be used for this purpose:  *getDashboardMetaData(), getLensMetaData(), getAllAssetMetaData(), addArchivePrefix(), and archiveAssets().*  These can be used together as in the example below to manage apps and to archive old and unused assets.  To archive assets it is recommended to create a seperate app to store old assets in so that it is only accessable by admins.
 
-```
+```python
 # Example of using meta data to generate a list of assets to archive
 df = EA.getAllAssetMetaData(appIdList=['00lXXXXXXXXXXXXXXX'])
 df = df[(df['lastModifiedDate'] < pd.to_datetime('2019-01-01', utc=True)) & (df['createdBy.name'] == 'John Smith')]
