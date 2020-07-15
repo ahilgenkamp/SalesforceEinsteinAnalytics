@@ -27,10 +27,16 @@ class salesforceEinsteinAnalytics(object):
 	def __init__(self, env_url, browser, suppressVersionWarn=False):
 		self.setLogLvl()
 		self.env_url = env_url
-		self.__version__ = '0.2.3'
+		
+		#Check if package is current version
+		self.__version__ = '0.2.4'
+		response = requests.get('https://pypi.org/pypi/SalesforceEinsteinAnalytics/json')
+		latest_version = response.json()['info']['version']
 		curr_version = pkg_resources.get_distribution("SalesforceEinsteinAnalytics").version
-		if curr_version != self.__version__ and suppressVersionWarn==False:
+		if curr_version != latest_version and suppressVersionWarn==False:
 			logging.warning('New version available. Use pip to upgrade.')
+		
+		#get browser cookie to use in request header
 		try:
 		    if browser == 'chrome':
 		        cj = browser_cookie3.chrome(domain_name=env_url[8:]) #remove first 8 characters since browser cookie does not expect "https://"
