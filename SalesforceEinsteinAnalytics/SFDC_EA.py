@@ -29,7 +29,6 @@ class salesforceEinsteinAnalytics(object):
 		self.env_url = env_url
 		
 		#Check if package is current version
-		self.__version__ = '0.2.4'
 		response = requests.get('https://pypi.org/pypi/SalesforceEinsteinAnalytics/json')
 		latest_version = response.json()['info']['version']
 		curr_version = pkg_resources.get_distribution("SalesforceEinsteinAnalytics").version
@@ -666,7 +665,7 @@ class salesforceEinsteinAnalytics(object):
 		attempts = 0
 		while attempts < max_request_attempts:
 			try:
-				r1 = requests.get(EA.env_url+'/services/data/v46.0/wave/dashboards', headers=EA.header, params=params)
+				r1 = requests.get(self.env_url+'/services/data/v46.0/wave/dashboards', headers=self.header, params=params)
 				response = json.loads(r1.text)
 				app_assets_df = json_normalize(response['dashboards'])
 				total_size = response['totalSize']
@@ -689,7 +688,7 @@ class salesforceEinsteinAnalytics(object):
 
 			while attempts < max_request_attempts:
 				try:
-					r1 = requests.get(EA.env_url+next_page, headers=EA.header, params=params)
+					r1 = requests.get(self.env_url+next_page, headers=self.header, params=params)
 					app_assets_df = json_normalize(json.loads(r1.text)['dashboards'])
 					next_page = json.loads(r1.text)['nextPageUrl']
 					break
@@ -720,7 +719,7 @@ class salesforceEinsteinAnalytics(object):
 		attempts = 0
 		while attempts < max_request_attempts:
 			try:
-				r1 = requests.get(EA.env_url+'/services/data/v46.0/wave/lenses', headers=EA.header, params=params)
+				r1 = requests.get(self.env_url+'/services/data/v46.0/wave/lenses', headers=self.header, params=params)
 				response = json.loads(r1.text)
 				app_assets_df = json_normalize(response['lenses'])
 				total_size = response['totalSize']
@@ -743,7 +742,7 @@ class salesforceEinsteinAnalytics(object):
 
 			while attempts < max_request_attempts:
 				try:
-					r1 = requests.get(EA.env_url+next_page, headers=EA.header, params=params)
+					r1 = requests.get(self.env_url+next_page, headers=self.header, params=params)
 					app_assets_df = json_normalize(json.loads(r1.text)['lenses'])
 					next_page = json.loads(r1.text)['nextPageUrl']
 					break
