@@ -1,0 +1,7 @@
+browser_cookie3
+unicodecsv
+unidecode
+pandas
+numpy
+requests
+datetime
