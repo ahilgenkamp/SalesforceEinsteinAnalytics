@@ -1,1 +1,0 @@
-from SalesforceEinsteinAnalytics.SFDC_EA import salesforceEinsteinAnalytics
