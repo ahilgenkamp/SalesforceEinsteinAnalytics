@@ -678,123 +678,133 @@ class salesforceEinsteinAnalytics(object):
 					logging.warning(' could not move asset: '+ToMoveList[a])
 
 
-	def getDashboardMetaData(self, appId, max_request_attempts=3, verbose=False):
 
-		convertToDateList = ['createdDate','lastModifiedDate','refreshDate']
-		progress_counter = 0
-		assets_df = pd.DataFrame()
-
-		params = {
-				'folderId': appId,
-				'pageSize': 200
-		}
-
-		attempts = 0
-		while attempts < max_request_attempts:
-			try:
-				r1 = requests.get(self.env_url+'/services/data/v46.0/wave/dashboards', headers=self.header, params=params)
-				response = json.loads(r1.text)
-				app_assets_df = json_normalize(response['dashboards'])
-				total_size = response['totalSize']
-				next_page = response['nextPageUrl']
-				break
-			except:
-				attempts += 1
-				logging.warning("Unexpected error:", sys.exc_info()[0])
-				logging.warning("Trying again...")
-		for i in convertToDateList:
-			app_assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
-			app_assets_df[i] = app_assets_df[i].apply(lambda x: pd.to_datetime(x))
-		assets_df = assets_df.append(app_assets_df, ignore_index=True)
-
-		#continue to pull data from next page if found
-		attempts = 0 # reset attempts for additional pages
-		while next_page is not None:
-			progress_counter += 200
-			if verbose == True:
-				print('Progress: '+str(round(progress_counter/total_size*100,1))+'%', end='', flush=True)
-
-			while attempts < max_request_attempts:
-				try:
-					r1 = requests.get(self.env_url+next_page, headers=self.header, params=params)
-					app_assets_df = json_normalize(json.loads(r1.text)['dashboards'])
-					next_page = json.loads(r1.text)['nextPageUrl']
-					break
-				except:
-					attempts += 1
-					logging.warning("Unexpected error:", sys.exc_info()[0])
-					logging.warning("Trying again...")
-			for i in convertToDateList:
-				app_assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
-				app_assets_df[i] = app_assets_df[i].apply(lambda x: pd.to_datetime(x))
-			assets_df = assets_df.append(app_assets_df, ignore_index=True)
-		return assets_df
-
-
-	def getLensMetaData(self, appId, max_request_attempts=3, verbose=False):
+	def getMetaData(self, appIdList, objectList=['dashboards','lenses','datasets'], max_request_attempts=3, verbose=False):
 		
-		convertToDateList = ['createdDate','lastModifiedDate','refreshDate']
 		progress_counter = 0
+		convertToDateList = ['createdDate','lastModifiedDate','refreshDate']
 		assets_df = pd.DataFrame()
 
-		params = {
-				'folderId': appId,
-				'pageSize': 200
-		}
+		for a in appIdList:
+			if verbose == True:
+				progress_counter += 1
+				print('Progress: '+str(round(progress_counter/len(appIdList)*100,1))+'%', end='', flush=True)
+			params = {'pageSize': 50, 'sort': 'Mru', 'hasCurrentOnly': 'true', 'folderId': a}
 			
-		attempts = 0
-		while attempts < max_request_attempts:
-			try:
-				r1 = requests.get(self.env_url+'/services/data/v46.0/wave/lenses', headers=self.header, params=params)
-				response = json.loads(r1.text)
-				app_assets_df = json_normalize(response['lenses'])
-				total_size = response['totalSize']
-				next_page = response['nextPageUrl']
-				break
-			except:
-				attempts += 1
-				logging.warning("Unexpected error:", sys.exc_info()[0])
-				logging.warning("Trying again...")
+			for obj in objectList:
+				attempts = 0
+				while attempts < max_request_attempts:
+					try:
+						r1 = requests.get(self.env_url+'/services/data/v46.0/wave/'+obj, headers=self.header, params=params)
+						response = json.loads(r1.text)
+						app_assets_df = json_normalize(response[obj])
+						total_size = response['totalSize']
+						try:
+							next_page = json.loads(r1.text)['nextPageUrl']
+						except KeyError as e:
+							logging.debug(e)
+							next_page = None
+						break
+					except:
+						attempts += 1
+						logging.warning("Unexpected error:", sys.exc_info()[0])
+						logging.warning("Trying again...")
+				assets_df = assets_df.append(app_assets_df, ignore_index=True)
+
+				#continue to pull data from next page if found
+				attempts = 0 # reset attempts for additional pages
+				while next_page is not None:
+					while attempts < max_request_attempts:
+						try:
+							r1 = requests.get(self.env_url+next_page, headers=self.header, params=params)
+							app_assets_df = json_normalize(json.loads(r1.text)[obj])
+							try:
+								next_page = json.loads(r1.text)['nextPageUrl']
+							except KeyError as e:
+								logging.debug(e)
+								next_page = None
+							break
+						except:
+							attempts += 1
+							logging.warning("Unexpected error:", sys.exc_info()[0])
+							logging.warning("Trying again...")
+					assets_df = assets_df.append(app_assets_df, ignore_index=True)
 		for i in convertToDateList:
-			app_assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
-			app_assets_df[i] = app_assets_df[i].apply(lambda x: pd.to_datetime(x))
-		assets_df = assets_df.append(app_assets_df, ignore_index=True)
-
-		#continue to pull data from next page if found
-		attempts = 0 # reset attempts for additional pages
-		while next_page is not None:
-			progress_counter += 200
-			if verbose == True:
-				print('Progress: '+str(round(progress_counter/total_size*100,1))+'%', end='', flush=True)
-
-			while attempts < max_request_attempts:
-				try:
-					r1 = requests.get(self.env_url+next_page, headers=self.header, params=params)
-					app_assets_df = json_normalize(json.loads(r1.text)['lenses'])
-					next_page = json.loads(r1.text)['nextPageUrl']
-					break
-				except:
-					attempts += 1
-					logging.warning("Unexpected error:", sys.exc_info()[0])
-					logging.warning("Trying again...")
-			for i in convertToDateList:
-				app_assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
-				app_assets_df[i] = app_assets_df[i].apply(lambda x: pd.to_datetime(x))
-			assets_df = assets_df.append(app_assets_df, ignore_index=True)
+			assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
+			assets_df[i] = assets_df[i].apply(lambda x: pd.to_datetime(x))
 		return assets_df
 
 
-	def getAllAssetMetaData(self, appIdList, max_request_attempts=3, verbose=False):
+	def getAssetCounts(self, appIdList=None, countsToReturn=['dashboards','lenses','datasets'], max_request_attempts=3, verbose=False):
 
-		allAssets_df = pd.DataFrame()
+		if appIdList is not None:
+			df = self.getMetaData(appIdList=appIdList, objectList=countsToReturn, verbose=verbose)
+			df = df.groupby(['folder.id','folder.label','type'], as_index=True).agg({'id':['count']})
+			df = df.pivot_table('id', ['folder.id', 'folder.label'], 'type')
+			df.columns = df.columns.droplevel()
+			df = df.reset_index()
 
-		for app in appIdList:			
-				dashboards_df = self.getDashboardMetaData(appId=app, max_request_attempts=max_request_attempts, verbose=verbose)
-				allAssets_df = allAssets_df.append(dashboards_df, ignore_index=True)				
-				lenses_df = self.getLensMetaData(appId=app, max_request_attempts=max_request_attempts, verbose=verbose)
-				allAssets_df = allAssets_df.append(lenses_df, ignore_index=True)			
-		
-		return allAssets_df
+			updateColNames = {
+			                    'dashboard': 'dashboardCount',
+			                    'dataset': 'datasetCount',
+			                    'lens': 'lensCount',
+			                }
+
+			df.rename(columns=updateColNames, inplace=True)
+			df.columns.names = ['index']			
+
+		else:
+			progress_counter = 0
+			params = {'pageSize': 50}
+
+			# get list of all folders that the user has access to
+			r = requests.get(self.env_url+'/services/data/v48.0/wave/folders', headers=self.header, params=params)
+			response = json.loads(r.text)
+			apps_df = pd.json_normalize(response['folders'])
+			total_size = response['totalSize']
+			next_page = response['nextPageUrl']
+
+			#continue to pull data from next page if found
+			attempts = 0 # reset attempts for additional pages
+			while next_page is not None:
+				progress_counter += 50
+				if verbose == True:
+					print('Collecting App List Progress: '+str(round(progress_counter/total_size*100,1))+'%', end='', flush=True)
+				while attempts < max_request_attempts:
+					try:
+						r1 = requests.get(self.env_url+next_page, headers=self.header, params=params)
+						np_df = json_normalize(json.loads(r1.text)['folders'])
+						try:
+							next_page = json.loads(r1.text)['nextPageUrl']
+						except KeyError as e:
+							logging.debug(e)
+							next_page = None
+						break
+					except:
+						attempts += 1
+						logging.warning("Unexpected error:", sys.exc_info()[0])
+						logging.warning("Trying again...")
+				apps_df = apps_df.append(np_df, ignore_index=True)
+
+			if verbose == True:
+				print('Getting asset counts for '+len(apps_df['id'].tolist())+' apps.') 
+			
+			df = self.getMetaData(appIdList=apps_df['id'].tolist(), objectList=countsToReturn, verbose=verbose)
+			df = df.groupby(['folder.id','folder.label','type'], as_index=True).agg({'id':['count']})
+			df = df.pivot_table('id', ['folder.id', 'folder.label'], 'type')
+			df.columns = df.columns.droplevel()
+			df = df.reset_index()
+
+			updateColNames = {
+			                    'dashboard': 'dashboardCount',
+			                    'dataset': 'datasetCount',
+			                    'lens': 'lensCount',
+			                }
+
+			df.rename(columns=updateColNames, inplace=True)
+			df.columns.names = ['index']
+
+		return df
 
 
 if __name__ == '__main__':	
