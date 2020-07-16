@@ -3,10 +3,10 @@
 Python package for working with the [Einstein Analytics API](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_rest.meta/bi_dev_guide_rest/bi_rest_overview.htm)
 
 ***NEW FEATURES:*** 
-1) Upload dataframes to EA as a CSV.  This allows you to do things like run python based machine learning models and upload or update the data in Einstein Analytics for visualization or dashboards.
+1) Upload data frames to EA as a CSV.  This allows you to do things like run python based machine learning models and upload or update the data in Einstein Analytics for visualization or dashboards.
 2) Set up an archive process to keep your apps clean and up-to-date.  There are now functions to add a prefix to dashboard names to warn your users that dashboards or lenses will be archived soon.  There are also functions to get asset metadata to check for dashboards or lenses that have not been updated in a long time.  Lastly, there is a function that allows you to move a list of assets to a designated archive app.
 
-* ***What does it do?*** This package allows you to easily perform several operations that are cumbersome in the Einstein Analytics UI.  It allows you to update app access, run SAQL queries for further exploration in Python, upload dataframes, archive assets, and restore old versions of a dashboard and to get app access details so that you can review who has access to your data.
+* ***What does it do?*** This package allows you to easily perform several operations that are cumbersome in the Einstein Analytics UI.  It allows you to update app access, run SAQL queries for further exploration in Python, upload data frames, archive assets, and restore old versions of a dashboard and to get app access details so that you can review who has access to your data.
 * ***Which systems are supported?*** Currently, this has only been tested on Windows and with Chrome/Firefox browsers
 
 
@@ -40,7 +40,7 @@ result = EA.run_saql_query(saql=saql)
 print(result.head())
 ```
   
-The ```load_df_to_EA()``` function allows you to easily load a dataframe to Einstein Analytics.  The simple usage is to pass the dataframe to the function with either the api name of an existing dataset or the new name for your dataset (new datasets will be loaded to your private app). An xmd file will be created using the datatypes from the supplied dataframe. 
+The ```load_df_to_EA()``` function allows you to easily load a dataframe to Einstein Analytics.  The simple usage is to pass the dataframe to the function with either the API name of an existing dataset or the new name for your dataset (new datasets will be loaded to your private app). An xmd file will be created using the datatypes from the supplied dataframe. 
 ```python
 
 df = pd.DataFrame({'key': ['foo', 'bar', 'baz', 'foo'],
@@ -99,11 +99,11 @@ all_apps_user_df = EA.get_app_user_list(save_path='C:\\Users\\username\\Document
 print(all_apps_user_df.head())
 ```
 
-To help manage dashboards and lenses in apps that you manage there are several functions that may be useful to monitor and archive assets.  Currently, there are five functions that can be used for this purpose:  *getDashboardMetaData(), getLensMetaData(), getAllAssetMetaData(), addArchivePrefix(), and archiveAssets().*  These can be used together as in the example below to manage apps and to archive old and unused assets.  To archive assets it is recommended to create a seperate app to store old assets in so that it is only accessable by admins.
+To help manage dashboards and lenses in apps that you manage there are several functions that may be useful to monitor and archive assets.  Currently, there are three functions that can be used for this purpose:  *getMetaData(), addArchivePrefix(), and archiveAssets().*  These can be used together as in the example below to manage apps and to archive old and unused assets.  To archive assets, it is recommended to create a separate app to store old assets so that it is only accessible by admins.  Additionally, there is a function called *getAssetCounts()* to check the number of assets in each app.
 
 ```python
 # Example of using meta data to generate a list of assets to archive
-df = EA.getAllAssetMetaData(appIdList=['00lXXXXXXXXXXXXXXX'])
+df = EA.getMetaData(appIdList=['00lXXXXXXXXXXXXXXX'], objectList=['dashboards','lenses','datasets'], verbose=True)
 df = df[(df['lastModifiedDate'] < pd.to_datetime('2019-01-01', utc=True)) & (df['createdBy.name'] == 'John Smith')]
 toArchiveList = df['id'].tolist()
 
@@ -117,6 +117,10 @@ EA.addArchivePrefix(warnList=toArchiveList, prefix='[ARCHIVE ON '+warnDate+'] ',
 
 # Example of moving assets to an archive app
 EA.archiveAssets(archiveAppId='00lXXXXXXXXXXXXXXX', ToMoveList=toArchiveList, verbose=True)
+
+# Get asset counts for a list of apps
+apps = ['00lXXXXXXXXXXXXXXX','00lYYYYYYYYYYYYYYY','00lZZZZZZZZZZZZZZZ']
+df = EA.getAssetCounts(appIdList=apps, countsToReturn=['dashboards','lenses','datasets'], verbose=True)
 ```
   
 To restore a dashboard to a previous version you can use the restore_previous_dashboard_version function and following examples.  The first example will return a dataframe showing the history versions available.  It is generally good to review this file first to view which version you want to restore.  To inspect the JSON of a previous version you can use the second example.  The third example can then be used to revert a dashboard to a previous version.
@@ -125,10 +129,10 @@ To restore a dashboard to a previous version you can use the restore_previous_da
 history_df = EA.restore_previous_dashboard_version(dashboard_id='0FKXXXXXXXXXXXXXXX')
 history_df.to_csv('C:\\Users\\username\\Documents\\dash_version_history.csv', index=False)
 
-#Get JSON of previous version to review
+#Get JSON of the previous version to review
 EA.restore_previous_dashboard_version(dashboard_id='0FKXXXXXXXXXXXXXXX', version_num=1, save_json_path='C:\\Users\\username\\Documents\\jsonFile.json')
 
-#Restore previous version of a dashboard
+#Restore the previous version of a dashboard
 EA.restore_previous_dashboard_version(dashboard_id='0FKXXXXXXXXXXXXXXX', version_num=1)
 ```
   
@@ -172,3 +176,5 @@ users_to_update = [
 
 EA.update_app_access(user_dict=users_to_update, app_id='00lXXXXXXXXXXXXXXX', update_type='updateUsers')
 ```
+
+
