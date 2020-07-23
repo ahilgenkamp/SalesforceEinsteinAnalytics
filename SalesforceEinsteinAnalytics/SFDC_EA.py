@@ -494,7 +494,7 @@ class salesforceEinsteinAnalytics(object):
 		return str(xmd).replace("'",'"')
 
 
-	def load_df_to_EA(self, df, dataset_api_name, xmd=None, encoding='UTF-8', operation='Overwrite', useNumericDefaults=True, default_measure_val="0.0", 
+	def load_df_to_EA(self, df, dataset_api_name, xmd=None, encoding='UTF-8', operation='Overwrite', useNumericDefaults=True, default_measure_val="0.0", max_request_attempts=3,
 		default_measure_fmt="0.0#", charset="UTF-8", deliminator=",", lineterminator="\r\n", removeNONascii=True, ascii_columns=None, fillna=True, dataset_label=None, verbose=False):
 		'''
 			field names will show up exactly as the column names in the supplied dataframe
@@ -579,13 +579,17 @@ class salesforceEinsteinAnalytics(object):
 				"DataFile" : data_part64
 			}
 
-			r2 = requests.post(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalDataPart', headers=self.header, data=json.dumps(payload))
-		try:
-			json.loads(r2.text)['success'] == True
-		except: 
-			logging.error('\n Datapart Upload Failed', exc_info=True)
-			logging.error(r2.text)
-			sys.exit(1)
+			attempts = 0
+			while attempts < max_request_attempts:
+				try:
+					r2 = requests.post(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalDataPart', headers=self.header, data=json.dumps(payload))
+					json.loads(r2.text)['success'] == True
+					break
+				except: 
+					attempts += 1
+					logging.error('\n Datapart Upload Failed', exc_info=True)
+					logging.debug(r2.text)
+					
 		
 		if verbose == True:
 			print('\nDatapart Upload Complete...')
@@ -595,7 +599,15 @@ class salesforceEinsteinAnalytics(object):
 					"Action" : "Process"
 				}
 
-		r3 = requests.patch(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalData/'+json.loads(r1.text)['id'], headers=self.header, data=json.dumps(payload))
+		attempts = 0
+		while attempts < max_request_attempts:
+			try:
+				r3 = requests.patch(self.env_url+'/services/data/v46.0/sobjects/InsightsExternalData/'+json.loads(r1.text)['id'], headers=self.header, data=json.dumps(payload))
+				break
+			except TimeoutError as e:
+				attempts += 1
+				logging.debug(sys.exc_info()[0])
+				logging.warning("Connection Timeout Error.  Trying again...")
 		
 		if verbose == True:
 			end = time.time()
