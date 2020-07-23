@@ -33,7 +33,7 @@ class salesforceEinsteinAnalytics(object):
 		latest_version = response.json()['info']['version']
 		curr_version = pkg_resources.get_distribution("SalesforceEinsteinAnalytics").version
 		if curr_version != latest_version:
-			logging.warning('New version available. Use pip to upgrade.')
+			logging.warning('New version available. Use "pip install SalesforceEinsteinAnalytics --upgrade" to upgrade.')
 		
 		#get browser cookie to use in request header
 		try:

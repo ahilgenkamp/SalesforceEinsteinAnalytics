@@ -16,7 +16,7 @@ requirements = [
     
 setup(
     name='SalesforceEinsteinAnalytics',
-    version='0.2.8',
+    version='0.2.9',
     author='Adam Hilgenkamp',
     author_email='ahilgie@gmail.com',
     description='Python package for working with the Einstein Analytics API',
