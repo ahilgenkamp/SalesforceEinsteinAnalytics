@@ -15,6 +15,15 @@ Python package for working with the [Einstein Analytics API](https://developer.s
 pip install SalesforceEinsteinAnalytics
 ```
 
+
+## Troubleshooting ##
+1) **"BrowserCookieError: Failed to find Chrome cookie"**  SalesforceEinsteinAnalytics relies on [browser-cookie3](https://github.com/borisbabic/browser_cookie3) to get the live session cookie and authenticate the session.  This package assumes the standard path for the chrome cookie file.  There may be cases where chrome is set up with a non-standard path.  In this scenario you will need to find the cookie file for your system. Once you find the path you can pass it as a variable to the package init function as shown below.  
+
+```python
+cookiefile = 'C:\\Users\\<user_name>\\AppData\\Local\\Google\\Chrome\\User Data\\Profile 1\\Cookies'
+EA = salesforceEinsteinAnalytics(env_url='https://yourinstance.my.salesforce.com', browser='chrome', cookiefile=cookiefile)
+```
+
 ## Usage ##
 
 To get started you will need to log into Einstein Analytics in Chrome or Firefox.  This package uses a live session to make API requests.  To create an instance of the function you will need to define your browser and supply an environment URL.

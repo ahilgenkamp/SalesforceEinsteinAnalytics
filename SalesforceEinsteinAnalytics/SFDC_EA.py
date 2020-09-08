@@ -1,30 +1,34 @@
 #Python wrapper / library for Einstein Analytics API
+
+#core libraries
 import sys
 import logging
-import browser_cookie3
-import requests
 import json
 import time
-import datetime
 from dateutil import tz
-import pandas as pd
-import numpy as np
 import re
-from pandas import json_normalize
 from decimal import Decimal
 import base64
 import csv
-import unicodecsv
-from unidecode import unidecode
 import math
 import pkg_resources
+
+# installed libraries
+import browser_cookie3
+import requests
+import unicodecsv
+from unidecode import unidecode
+import datetime
+import pandas as pd
+from pandas import json_normalize
+import numpy as np
 
 #init logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 logging.basicConfig(format="%(levelname)s: %(message)s")
 
 class salesforceEinsteinAnalytics(object):
-	def __init__(self, env_url, browser, logLevel='WARN'):
+	def __init__(self, env_url, browser, rawcookie=None, cookiefile=None, logLevel='WARN'):
 		self.setLogLvl(level=logLevel)
 		self.env_url = env_url
 		
@@ -36,21 +40,41 @@ class salesforceEinsteinAnalytics(object):
 			logging.warning('New version available. Use "pip install SalesforceEinsteinAnalytics --upgrade" to upgrade.')
 		
 		#get browser cookie to use in request header
-		try:
-		    if browser == 'chrome':
-		        cj = browser_cookie3.chrome(domain_name=env_url[8:]) #remove first 8 characters since browser cookie does not expect "https://"
-		        my_cookies = requests.utils.dict_from_cookiejar(cj)
-		        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
-		    elif browser == 'firefox':
-		        cj = browser_cookie3.firefox(domain_name=env_url[8:])
-		        my_cookies = requests.utils.dict_from_cookiejar(cj)
-		        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
-		    else:
-		        logging.error('Please select a valid browser (chrome or firefox)')
-		        sys.exit(1)
-		except:
-		    logging.error('ERROR: Could not get session ID.  Make sure you are logged into a live Salesforce session (chrome/firefox).')
-		    sys.exit(1)
+		if rawcookie != None:
+			self.header = {'Authorization': 'Bearer '+rawcookie, 'Content-Type': 'application/json'}
+		elif cookiefile != None:
+			print('using cookiefile')
+			try:
+			    if browser == 'chrome':
+			        cj = browser_cookie3.chrome(domain_name=env_url[8:], cookie_file=cookiefile)
+			        my_cookies = requests.utils.dict_from_cookiejar(cj)
+			        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
+			    elif browser == 'firefox':
+			        cj = browser_cookie3.firefox(domain_name=env_url[8:], cookie_file=cookiefile)
+			        my_cookies = requests.utils.dict_from_cookiejar(cj)
+			        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
+			    else:
+			        logging.error('Please select a valid browser (chrome or firefox)')
+			        sys.exit(1)
+			except:
+			    logging.error('ERROR: Could not get session ID.  Make sure you are logged into a live Salesforce session (chrome/firefox).')
+			    sys.exit(1)
+		else:	
+			try:
+			    if browser == 'chrome':
+			        cj = browser_cookie3.chrome(domain_name=env_url[8:]) #remove first 8 characters since browser cookie does not expect "https://"
+			        my_cookies = requests.utils.dict_from_cookiejar(cj)
+			        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
+			    elif browser == 'firefox':
+			        cj = browser_cookie3.firefox(domain_name=env_url[8:])
+			        my_cookies = requests.utils.dict_from_cookiejar(cj)
+			        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
+			    else:
+			        logging.error('Please select a valid browser (chrome or firefox)')
+			        sys.exit(1)
+			except:
+			    logging.error('ERROR: Could not get session ID.  Make sure you are logged into a live Salesforce session (chrome/firefox).')
+			    sys.exit(1)
 
 
 	def setLogLvl(self, level='WARN'):
