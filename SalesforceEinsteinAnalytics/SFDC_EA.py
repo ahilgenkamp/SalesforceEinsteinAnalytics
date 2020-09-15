@@ -222,6 +222,7 @@ class salesforceEinsteinAnalytics(object):
 				ERROR = OpenSSL.SSL.SysCallError: (-1, 'Unexpected EOF')
 				Proposed Solution is to add a try/except block to handle the error
 			'''
+			app_user_df = pd.DataFrame()
 			attempts = 0
 			while attempts < max_request_attempts:
 				try:
@@ -229,8 +230,6 @@ class salesforceEinsteinAnalytics(object):
 					response = json.loads(r.text)
 					total_size = response['totalSize']
 					next_page = response['nextPageUrl']
-
-					app_user_df = pd.DataFrame()
 					break
 				except:
 					attempts += 1
@@ -301,9 +300,9 @@ class salesforceEinsteinAnalytics(object):
 
 
 		elif app_id is not None:
+			app_user_df = pd.DataFrame()
 			if type(app_id) is list or type(app_id) is tuple:
 				for app in app_id:
-					app_user_df = pd.DataFrame()
 					r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app, headers=self.header)
 					response = json.loads(r.text)
 					for u in response['shares']: 
@@ -844,4 +843,7 @@ class salesforceEinsteinAnalytics(object):
 
 
 if __name__ == '__main__':	
-	pass
+	EA = salesforceEinsteinAnalytics(env_url='https://org62.my.salesforce.com', browser='chrome')
+	app_user_df = EA.get_app_user_list(app_id=['00l0M0000033gFXQAY','00l0M0000033gEUQAY','00l0M000003KqgMQAS'])
+	print(set(app_user_df['AppId'].tolist()))
+	print(app_user_df.head(5))
