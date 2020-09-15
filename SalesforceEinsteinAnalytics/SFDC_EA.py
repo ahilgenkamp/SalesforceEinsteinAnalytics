@@ -843,7 +843,4 @@ class salesforceEinsteinAnalytics(object):
 
 
 if __name__ == '__main__':	
-	EA = salesforceEinsteinAnalytics(env_url='https://org62.my.salesforce.com', browser='chrome')
-	app_user_df = EA.get_app_user_list(app_id=['00l0M0000033gFXQAY','00l0M0000033gEUQAY','00l0M000003KqgMQAS'])
-	print(set(app_user_df['AppId'].tolist()))
-	print(app_user_df.head(5))
+	pass
