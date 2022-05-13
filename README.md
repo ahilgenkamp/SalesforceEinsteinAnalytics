@@ -24,6 +24,23 @@ cookiefile = 'C:\\Users\\<user_name>\\AppData\\Local\\Google\\Chrome\\User Data\
 EA = salesforceEinsteinAnalytics(env_url='https://yourinstance.my.salesforce.com', browser='chrome', cookiefile=cookiefile)
 ```
 
+2) **"ERROR: dataset not found using API Name search."** This error might happen when trying to run a saql query.  The workaround for this error is to log into CRM Analytics (FKA Einstein Analytics) and to open a lens for the dataset that you want to query.  The dataset ID should be visible in the URL.  You can copy the ID and the next step is to change the 
+
+```python
+dsnm, dsid, dsvid = EA.get_dataset_id(self, dataset_name='<ID COPIED FROM URL>', search_type='ID')
+id_for_saql = dsid+'/'+dsvid
+
+saql = '''
+q = load "{}";
+q = filter q by 'dimension' == "value";
+q = group q by 'dimension';
+q = foreach q generate 'dimension', sum('measure') as 'sum_measure';
+
+'''.format(id_for_saql)
+
+df = EA.run_saql_query(saql=saql, search_for_dataset=False)
+```
+
 ## Usage ##
 
 To get started you will need to log into Einstein Analytics in Chrome or Firefox.  This package uses a live session to make API requests.  To create an instance of the function you will need to define your browser and supply an environment URL.

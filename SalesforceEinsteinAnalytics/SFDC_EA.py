@@ -37,7 +37,7 @@ class salesforceEinsteinAnalytics(object):
 		latest_version = response.json()['info']['version']
 		curr_version = pkg_resources.get_distribution("SalesforceEinsteinAnalytics").version
 		if curr_version != latest_version:
-			logging.warning('New version available. Use "pip install SalesforceEinsteinAnalytics --upgrade" to upgrade.')
+			logging.info('New version available. Use "pip install SalesforceEinsteinAnalytics --upgrade" to upgrade.')
 		
 		#get browser cookie to use in request header
 		if rawcookie != None:
@@ -45,69 +45,87 @@ class salesforceEinsteinAnalytics(object):
 		elif cookiefile != None:
 			print('using cookiefile')
 			try:
-			    if browser == 'chrome':
-			        cj = browser_cookie3.chrome(domain_name=env_url[8:], cookie_file=cookiefile)
-			        my_cookies = requests.utils.dict_from_cookiejar(cj)
-			        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
-			    elif browser == 'firefox':
-			        cj = browser_cookie3.firefox(domain_name=env_url[8:], cookie_file=cookiefile)
-			        my_cookies = requests.utils.dict_from_cookiejar(cj)
-			        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
-			    else:
-			        logging.error('Please select a valid browser (chrome or firefox)')
-			        sys.exit(1)
+				if browser == 'chrome':
+					cj = browser_cookie3.chrome(domain_name=env_url[8:], cookie_file=cookiefile)
+					my_cookies = requests.utils.dict_from_cookiejar(cj)
+					self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
+				elif browser == 'firefox':
+					cj = browser_cookie3.firefox(domain_name=env_url[8:], cookie_file=cookiefile)
+					my_cookies = requests.utils.dict_from_cookiejar(cj)
+					self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
+				else:
+					logging.error('Please select a valid browser (chrome or firefox)')
+					sys.exit(1)
 			except:
-			    logging.error('ERROR: Could not get session ID.  Make sure you are logged into a live Salesforce session (chrome/firefox).')
-			    sys.exit(1)
+				logging.error('ERROR: Could not get session ID.  Make sure you are logged into a live Salesforce session (chrome/firefox).')
+				sys.exit(1)
 		else:	
 			try:
-			    if browser == 'chrome':
-			        cj = browser_cookie3.chrome(domain_name=env_url[8:]) #remove first 8 characters since browser cookie does not expect "https://"
-			        my_cookies = requests.utils.dict_from_cookiejar(cj)
-			        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
-			    elif browser == 'firefox':
-			        cj = browser_cookie3.firefox(domain_name=env_url[8:])
-			        my_cookies = requests.utils.dict_from_cookiejar(cj)
-			        self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
-			    else:
-			        logging.error('Please select a valid browser (chrome or firefox)')
-			        sys.exit(1)
+				if browser == 'chrome':
+					cj = browser_cookie3.chrome(domain_name=env_url[8:]) #remove first 8 characters since browser cookie does not expect "https://"
+					my_cookies = requests.utils.dict_from_cookiejar(cj)
+					self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
+				elif browser == 'firefox':
+					cj = browser_cookie3.firefox(domain_name=env_url[8:])
+					my_cookies = requests.utils.dict_from_cookiejar(cj)
+					self.header = {'Authorization': 'Bearer '+my_cookies['sid'], 'Content-Type': 'application/json'}
+				else:
+					logging.error('Please select a valid browser (chrome or firefox)')
+					sys.exit(1)
 			except:
-			    logging.error('ERROR: Could not get session ID.  Make sure you are logged into a live Salesforce session (chrome/firefox).')
-			    sys.exit(1)
+				logging.error('ERROR: Could not get session ID.  Make sure you are logged into a live Salesforce session (chrome/firefox).')
+				sys.exit(1)
 
 
 	def setLogLvl(self, level='WARN'):
 		if level == 'DEBUG':
-		    logging.getLogger().setLevel(logging.DEBUG)
+			logging.getLogger().setLevel(logging.DEBUG)
 		elif level == 'INFO':
-		    logging.getLogger().setLevel(logging.INFO)
+			logging.getLogger().setLevel(logging.INFO)
 		elif level == 'WARN':
-		    logging.getLogger().setLevel(logging.WARN)
+			logging.getLogger().setLevel(logging.WARN)
 		else:
 			logging.getLogger().setLevel(logging.ERROR)
 
 
 	def get_local_time(self, add_sec=None, timeFORfile=False):
-	    #set timezone for displayed operation start time
-	    curr_time = datetime.datetime.utcnow().replace(tzinfo=tz.tzutc()).astimezone(tz.tzlocal())
-	    if add_sec is not None:
-	        return (curr_time + datetime.timedelta(seconds=add_sec)).strftime("%I:%M:%S %p")
-	    elif timeFORfile == True:
-	        return curr_time.strftime("%m_%d_%Y__%I%p")
-	    else:
-	        return curr_time.strftime("%I:%M:%S %p")	
+		#set timezone for displayed operation start time
+		curr_time = datetime.datetime.utcnow().replace(tzinfo=tz.tzutc()).astimezone(tz.tzlocal())
+		if add_sec is not None:
+			return (curr_time + datetime.timedelta(seconds=add_sec)).strftime("%I:%M:%S %p")
+		elif timeFORfile == True:
+			return curr_time.strftime("%m_%d_%Y__%I%p")
+		else:
+			return curr_time.strftime("%I:%M:%S %p")	
 
 
 	def get_dataset_id(self, dataset_name, search_type='API Name', verbose=False):
 
-		params = {'pageSize': 50, 'sort': 'Mru', 'hasCurrentOnly': 'true', 'q': dataset_name}
-		dataset_json = requests.get(self.env_url+'/services/data/v46.0/wave/datasets', headers=self.header, params=params) 
-		dataset_df = json_normalize(json.loads(dataset_json.text)['datasets'])
+		if search_type=='API Name':
+			try:
+				params = {'pageSize': 50, 'sort': 'Mru', 'hasCurrentOnly': 'true', 'q': dataset_name}
+				dataset_json = requests.get(self.env_url+'/services/data/v54.0/wave/datasets', headers=self.header, params=params) 
+				dataset_df = json_normalize(json.loads(dataset_json.text)['datasets'])
+			except:
+				logging.error('ERROR: dataset not found using API Name search. Change search type to ID. Details in documentation.')
+				sys.exit(1)	
+		
+
+
+
+		elif search_type=='ID':
+			params = {'pageSize': 50, 'sort': 'Mru', 'hasCurrentOnly': 'true', 'ids': [dataset_name]}
+			dataset_json = requests.get(self.env_url+'/services/data/v54.0/wave/datasets', headers=self.header, params=params) 
+			dataset_df = json_normalize(json.loads(dataset_json.text)['datasets'])
+		else:
+			logging.error('ERROR: select an available search_type: API Name, ID, or UI Label')
+			sys.exit(1)
 
 		#check if the user wants to seach by API name or label name
 		if search_type == 'UI Label':
 			dataset_df = dataset_df[dataset_df['label'] == dataset_name]
+		elif search_type == 'ID':
+			dataset_df = dataset_df[dataset_df['id'] == dataset_name]
 		else:
 			dataset_df = dataset_df[dataset_df['name'] == dataset_name]
 
@@ -130,7 +148,7 @@ class salesforceEinsteinAnalytics(object):
 			return dsnm, dsid, dsvid 
 
 
-	def run_saql_query(self, saql, save_path=None, verbose=False):
+	def run_saql_query(self, saql, dataset_search_type='API Name', search_for_dataset=True, save_path=None, verbose=False):
 		'''
 			This function takes a saql query as an argument and returns a dataframe or saves to csv
 			The query can be in JSON form or can be in the UI SAQL form
@@ -144,24 +162,27 @@ class salesforceEinsteinAnalytics(object):
 		
 		saql = saql.replace('\"','\\"') #convert UI saql query to JSON format
 		
-		#create a dictionary with all datasets used in the query
-		load_stmt_old = re.findall(r"(= load )(.*?)(;)", saql)
-		load_stmt_new = load_stmt_old.copy()
-		for ls in range(0,len(load_stmt_new)):
-			load_stmt_old[ls] = ''.join(load_stmt_old[ls])
+		if search_for_dataset == True:
+			#create a dictionary with all datasets used in the query
+			load_stmt_old = re.findall(r"(= load )(.*?)(;)", saql)
+			load_stmt_new = load_stmt_old.copy()
+			for ls in range(0,len(load_stmt_new)):
+				load_stmt_old[ls] = ''.join(load_stmt_old[ls])
 
-			dsnm, dsid, dsvid = self.get_dataset_id(dataset_name=load_stmt_new[ls][1].replace('\\"',''), verbose=verbose)
-			load_stmt_new[ls] = ''.join(load_stmt_new[ls])
-			load_stmt_new[ls] = load_stmt_new[ls].replace(dsnm, dsid+'/'+dsvid)
+				dsnm, dsid, dsvid = self.get_dataset_id(dataset_name=load_stmt_new[ls][1].replace('\\"',''), search_type=dataset_search_type, verbose=verbose)
+				load_stmt_new[ls] = ''.join(load_stmt_new[ls])
+				load_stmt_new[ls] = load_stmt_new[ls].replace(dsnm, dsid+'/'+dsvid)	
 
-		#update saql with dataset ID and version ID
-		for i in range(0,len(load_stmt_new)):
-			saql = saql.replace(load_stmt_old[i], load_stmt_new[i])
-		saql = saql.replace('\\"','\"')
-
+			#update saql with dataset ID and version ID
+			for i in range(0,len(load_stmt_new)):
+				saql = saql.replace(load_stmt_old[i], load_stmt_new[i])
 		
+		saql = saql.replace('\\"','\"')
+			
 		if verbose == True:
 			print('Running SAQL Query...')
+
+		print(saql)
 
 		#run query and return dataframe or save as csv
 		payload = {"query":saql}
@@ -244,7 +265,7 @@ class salesforceEinsteinAnalytics(object):
 						users = json.loads(r.text)['shares']
 						for u in users: 
 							app_user_df = app_user_df.append(	{	"AppId": app['id'], 
-																	"AppName": app['name'], 
+																	"AppName": app['label'], 
 																	"UserId": u['sharedWithId'], 
 																	"UserName": u['sharedWithLabel'], 
 																	"AccessType": u['accessType'], 
@@ -286,7 +307,7 @@ class salesforceEinsteinAnalytics(object):
 							users = json.loads(r.text)['shares']
 							for u in users: 
 								app_user_df = app_user_df.append(	{	"AppId": app['id'], 
-																		"AppName": app['name'], 
+																		"AppName": app['label'], 
 																		"UserId": u['sharedWithId'], 
 																		"UserName": u['sharedWithLabel'], 
 																		"AccessType": u['accessType'], 
@@ -307,7 +328,7 @@ class salesforceEinsteinAnalytics(object):
 					response = json.loads(r.text)
 					for u in response['shares']: 
 						app_user_df = app_user_df.append(	{	"AppId": app, 
-																"AppName": response['name'], 
+																"AppName": response['label'], 
 																"UserId": u['sharedWithId'], 
 																"UserName": u['sharedWithLabel'], 
 																"AccessType": u['accessType'], 
@@ -430,14 +451,6 @@ class salesforceEinsteinAnalytics(object):
 			print('Completed in '+str(round(end-start,3))+'sec')
 
 
-	def update_dashboard_access(self, update_df, update_type, verbose=True):
-		'''
-			Function to make it easier to update access using dashboard names vs finding all apps needed.
-			update dataframe should have the following columns:  Dashboard Id, Access Type, and User Id
-		'''
-		pass
-
-
 	def remove_non_ascii(self, df, columns=None):
 		if columns == None:
 			columns = df.columns
@@ -521,6 +534,7 @@ class salesforceEinsteinAnalytics(object):
 		default_measure_fmt="0.0#", charset="UTF-8", deliminator=",", lineterminator="\r\n", removeNONascii=True, ascii_columns=None, fillna=True, dataset_label=None, verbose=False):
 		'''
 			field names will show up exactly as the column names in the supplied dataframe
+			1) For available operations reference: https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_ext_data.meta/bi_dev_guide_ext_data/bi_ext_data_object_externaldata.htm#topic-title
 		'''
 
 		if verbose == True:		
@@ -544,6 +558,10 @@ class salesforceEinsteinAnalytics(object):
 			self.remove_non_ascii(df, columns=ascii_columns)
 		elif removeNONascii == True:
 			self.remove_non_ascii(df)
+
+
+		## TODO ##
+		# Add logic to remove "." from column names.  The period character is not allowed for data table column names
 
 		
 		# Upload Config Steps
@@ -588,7 +606,7 @@ class salesforceEinsteinAnalytics(object):
 			if chunk == 0:
 				data_part64 = base64.b64encode(df_part.to_csv(index=False, quotechar='"', quoting=csv.QUOTE_MINIMAL).encode('UTF-8')).decode()
 			else:
-				data_part64 = base64.b64encode(df_part.to_csv(index=False, header=False, quotechar='"',quoting=csv.QUOTE_MINIMAL).encode('UTF-8')).decode()
+				data_part64 = base64.b64encode(df_part.to_csv(index=False, header=False, quotechar='"', quoting=csv.QUOTE_MINIMAL).encode('UTF-8')).decode()
 			
 			range_start += rows_in_part
 			max_data_part += rows_in_part
@@ -689,7 +707,9 @@ class salesforceEinsteinAnalytics(object):
 
 	def archiveAssets(self, archiveAppId, ToMoveList, verbose=False):
 		'''
-		ToMoveList can be the Ids for either a dashboard or a lens
+		I need to change the archiveAssets function to use a dataframe.  Requireing an asset type will prevent the need
+		to try dashboards first, reducing the compute time.  It will also prevent issues of archiving a dashboard when you 
+		are trying to archive a lens.  Also, I need to create a dataframe output with the results and not just stdout.
 		'''
 
 		payload = {'folder': {'id':archiveAppId} }
@@ -780,10 +800,10 @@ class salesforceEinsteinAnalytics(object):
 			df = df.reset_index()
 
 			updateColNames = {
-			                    'dashboard': 'dashboardCount',
-			                    'dataset': 'datasetCount',
-			                    'lens': 'lensCount',
-			                }
+								'dashboard': 'dashboardCount',
+								'dataset': 'datasetCount',
+								'lens': 'lensCount',
+							}
 
 			df.rename(columns=updateColNames, inplace=True)
 			df.columns.names = ['index']			
@@ -831,15 +851,55 @@ class salesforceEinsteinAnalytics(object):
 			df = df.reset_index()
 
 			updateColNames = {
-			                    'dashboard': 'dashboardCount',
-			                    'dataset': 'datasetCount',
-			                    'lens': 'lensCount',
-			                }
+								'dashboard': 'dashboardCount',
+								'dataset': 'datasetCount',
+								'lens': 'lensCount',
+							}
 
 			df.rename(columns=updateColNames, inplace=True)
 			df.columns.names = ['index']
 
 		return df
+
+	def get_dashboard_dataset_usage(self, appIdList, verbose=False):
+
+		#https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_rest.meta/bi_dev_guide_rest/bi_resources_dependencies_id.htm
+
+		appAssets = self.getMetaData(appIdList=appIdList, objectList=['dashboards'], verbose=verbose)
+		ds_to_db = pd.DataFrame()
+
+		for d in appAssets['id']:
+			ds = appAssets[appAssets['id'] == d]
+			for i in range(0,len(ds['datasets'].tolist()[0])):
+				newRow = {
+					'App_ID': ds['folder.id'].values,
+					'App_Name': ds['folder.label'].values,
+					'Dashboard_ID': [d],
+					'Dashboard_APIName': ds['name'].values,
+					'Dashboard_Name': ds['label'].values,
+					'Dataset_ID': [ds['datasets'].tolist()[0][i].get('id')],
+					'Dataset_APIName': [ds['datasets'].tolist()[0][i].get('name')],
+					'Dataset_Name': [ds['datasets'].tolist()[0][i].get('label')]
+				}
+				ds_to_db = ds_to_db.append(pd.DataFrame(newRow), ignore_index=True)
+
+		return ds_to_db
+
+	def update_dashboard_access(self, update_df, update_type, verbose=True):
+		'''
+			Function to make it easier to update access using dashboard names vs finding all apps needed.
+			update dataframe should have the following columns:  Dashboard Id, Access Type, and User Id
+		'''
+		pass
+
+	def check_dataset_field_usage(self, dataset_api_name, field, verbose=True):
+		'''
+		Work in progress...
+		This is a function to check if a particular dimension is being used in a dataset.  
+		It will return a dataframe with the dashboards and steps that the field is used in.
+		This will identify if changes need to be made before removing or changing a field.
+		'''
+		pass
 
 
 if __name__ == '__main__':	
