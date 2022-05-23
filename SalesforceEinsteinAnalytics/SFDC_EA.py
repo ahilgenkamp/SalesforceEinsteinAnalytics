@@ -181,8 +181,7 @@ class salesforceEinsteinAnalytics(object):
 			
 		if verbose == True:
 			print('Running SAQL Query...')
-
-		print(saql)
+			print(saql)
 
 		#run query and return dataframe or save as csv
 		payload = {"query":saql}
