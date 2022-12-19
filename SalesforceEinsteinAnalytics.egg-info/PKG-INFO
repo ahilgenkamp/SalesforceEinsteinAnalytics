@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: SalesforceEinsteinAnalytics
-Version: 0.3.4
+Version: 0.3.5
 Summary: Python package for working with the Einstein Analytics API
 Home-page: https://github.com/ahilgenkamp/SalesforceEinsteinAnalytics
 Author: Adam Hilgenkamp
