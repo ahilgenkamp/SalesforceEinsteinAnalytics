@@ -109,25 +109,29 @@ class salesforceEinsteinAnalytics(object):
 			except:
 				logging.error('ERROR: dataset not found using API Name search. Change search type to ID. Details in documentation.')
 				sys.exit(1)	
-		
-
-
-
 		elif search_type=='ID':
-			params = {'pageSize': 50, 'sort': 'Mru', 'hasCurrentOnly': 'true', 'ids': [dataset_name]}
-			dataset_json = requests.get(self.env_url+'/services/data/v54.0/wave/datasets', headers=self.header, params=params) 
-			dataset_df = json_normalize(json.loads(dataset_json.text)['datasets'])
+			try:
+				params = {'pageSize': 50, 'sort': 'Mru', 'hasCurrentOnly': 'true', 'ids': [dataset_name]}
+				dataset_json = requests.get(self.env_url+'/services/data/v54.0/wave/datasets', headers=self.header, params=params) 
+				dataset_df = json_normalize(json.loads(dataset_json.text)['datasets'])
+			except:
+				logging.error('ERROR: dataset not found using ID Name search. Change search type and ensure you have access to the dataset.')
+				sys.exit(1)
 		else:
 			logging.error('ERROR: select an available search_type: API Name, ID, or UI Label')
 			sys.exit(1)
 
 		#check if the user wants to seach by API name or label name
-		if search_type == 'UI Label':
-			dataset_df = dataset_df[dataset_df['label'] == dataset_name]
-		elif search_type == 'ID':
-			dataset_df = dataset_df[dataset_df['id'] == dataset_name]
-		else:
-			dataset_df = dataset_df[dataset_df['name'] == dataset_name]
+		try:
+			if search_type == 'UI Label':
+				dataset_df = dataset_df[dataset_df['label'] == dataset_name]
+			elif search_type == 'ID':
+				dataset_df = dataset_df[dataset_df['id'] == dataset_name]
+			else:
+				dataset_df = dataset_df[dataset_df['name'] == dataset_name]
+		except:
+			logging.error('Dataset search for {} failed to return a result.  Ensure you have access to the dataset and review the Troubleshooting section in the documentation'.format(dataset_name))
+			sys.exit(1)
 
 		#show user how many matches that they got.  Might want to use exact API name if getting multiple matches for label search.
 		if verbose == True:
@@ -135,7 +139,7 @@ class salesforceEinsteinAnalytics(object):
 
 		#if dataframe is empty then return not found message or return the dataset ID
 		if dataset_df.empty == True:
-			logging.warning('Dataset not found.  Please check name or API name in Einstein Analytics.')
+			logging.error('Dataset search for {} failed to return a result.  Ensure you have access to the dataset and review the Troubleshooting section in the documentation'.format(dataset_name))
 			sys.exit(1)
 		else:
 			dsnm = dataset_df['name'].tolist()[0]
@@ -736,7 +740,6 @@ class salesforceEinsteinAnalytics(object):
 	def getMetaData(self, appIdList, objectList=['dashboards','lenses','datasets'], max_request_attempts=3, verbose=False):
 		
 		progress_counter = 0
-		convertToDateList = ['createdDate','lastModifiedDate','refreshDate']
 		assets_df = pd.DataFrame()
 
 		for a in appIdList:
@@ -783,7 +786,7 @@ class salesforceEinsteinAnalytics(object):
 							logging.warning("Unexpected error:", sys.exc_info()[0])
 							logging.warning("Trying again...")
 					assets_df = assets_df.append(app_assets_df, ignore_index=True)
-		for i in convertToDateList:
+		for i in assets_df.columns[assets_df.columns.str.contains('Date')]:
 			assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
 			assets_df[i] = assets_df[i].apply(lambda x: pd.to_datetime(x))
 		return assets_df
