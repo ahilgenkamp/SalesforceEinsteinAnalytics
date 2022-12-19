@@ -8,3 +8,4 @@ SalesforceEinsteinAnalytics.egg-info/SOURCES.txt
 SalesforceEinsteinAnalytics.egg-info/dependency_links.txt
 SalesforceEinsteinAnalytics.egg-info/requires.txt
 SalesforceEinsteinAnalytics.egg-info/top_level.txt
+dist/SalesforceEinsteinAnalytics-0.3.4.tar.gz
