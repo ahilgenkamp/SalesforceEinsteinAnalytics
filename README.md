@@ -1,6 +1,7 @@
 # SalesforceEinsteinAnalytics #
 
 Python package for working with the [Einstein Analytics API](https://developer.salesforce.com/docs/atlas.en-us.bi_dev_guide_rest.meta/bi_dev_guide_rest/bi_rest_overview.htm)
+Now known as CRM Analytics.
 
 ***NEW FEATURES:*** 
 1) Upload data frames to EA as a CSV.  This allows you to do things like run python based machine learning models and upload or update the data in Einstein Analytics for visualization or dashboards.
