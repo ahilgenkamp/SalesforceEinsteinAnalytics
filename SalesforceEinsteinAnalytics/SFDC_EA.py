@@ -267,13 +267,14 @@ class salesforceEinsteinAnalytics(object):
 						r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app["id"], headers=self.header)
 						users = json.loads(r.text)['shares']
 						for u in users: 
-							app_user_df = app_user_df.append(	{	"AppId": app['id'], 
-																	"AppName": app['label'], 
-																	"UserId": u['sharedWithId'], 
-																	"UserName": u['sharedWithLabel'], 
-																	"AccessType": u['accessType'], 
-																	"UserType": u['shareType']
-																}, ignore_index=True)
+							new_row = pd.DataFrame({"AppId": app['id'], 
+													"AppName": app['label'], 
+													"UserId": u['sharedWithId'], 
+													"UserName": u['sharedWithLabel'], 
+													"AccessType": u['accessType'], 
+													"UserType": u['shareType']
+													})
+							app_user_df = pd.concat([app_user_df,new_row], ignore_index=True)
 						break
 					except:
 						attempts += 1
@@ -309,13 +310,14 @@ class salesforceEinsteinAnalytics(object):
 							r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app["id"], headers=self.header)
 							users = json.loads(r.text)['shares']
 							for u in users: 
-								app_user_df = app_user_df.append(	{	"AppId": app['id'], 
-																		"AppName": app['label'], 
-																		"UserId": u['sharedWithId'], 
-																		"UserName": u['sharedWithLabel'], 
-																		"AccessType": u['accessType'], 
-																		"UserType": u['shareType']
-																	}, ignore_index=True)
+								new_row = pd.DataFrame({"AppId": app['id'], 
+													"AppName": app['label'], 
+													"UserId": u['sharedWithId'], 
+													"UserName": u['sharedWithLabel'], 
+													"AccessType": u['accessType'], 
+													"UserType": u['shareType']
+													})
+								app_user_df = pd.concat([app_user_df,new_row], ignore_index=True)
 						break
 					except:
 						attempts += 1
@@ -330,13 +332,14 @@ class salesforceEinsteinAnalytics(object):
 					r = requests.get(self.env_url+'/services/data/v46.0/wave/folders/'+app, headers=self.header)
 					response = json.loads(r.text)
 					for u in response['shares']: 
-						app_user_df = app_user_df.append(	{	"AppId": app, 
-																"AppName": response['label'], 
-																"UserId": u['sharedWithId'], 
-																"UserName": u['sharedWithLabel'], 
-																"AccessType": u['accessType'], 
-																"UserType": u['shareType']
-															}, ignore_index=True)
+						new_row = pd.DataFrame({"AppId": [app], 
+												"AppName": response['label'], 
+												"UserId": u['sharedWithId'], 
+												"UserName": u['sharedWithLabel'], 
+												"AccessType": u['accessType'], 
+												"UserType": u['shareType']
+												})
+						app_user_df = pd.concat([app_user_df,new_row], ignore_index=True)
 			else:
 				logging.error('Please input a list or tuple of app Ids')
 				sys.exit(1)
@@ -766,7 +769,7 @@ class salesforceEinsteinAnalytics(object):
 						attempts += 1
 						logging.warning("Unexpected error:", sys.exc_info()[0])
 						logging.warning("Trying again...")
-				assets_df = assets_df.append(app_assets_df, ignore_index=True)
+				assets_df = pd.concat([assets_df,app_assets_df], ignore_index=True)
 
 				#continue to pull data from next page if found
 				attempts = 0 # reset attempts for additional pages
@@ -785,10 +788,13 @@ class salesforceEinsteinAnalytics(object):
 							attempts += 1
 							logging.warning("Unexpected error:", sys.exc_info()[0])
 							logging.warning("Trying again...")
-					assets_df = assets_df.append(app_assets_df, ignore_index=True)
+					assets_df = pd.concat([assets_df,app_assets_df], ignore_index=True)
 		for i in assets_df.columns[assets_df.columns.str.contains('Date')]:
-			assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
-			assets_df[i] = assets_df[i].apply(lambda x: pd.to_datetime(x))
+			try:
+				assets_df[i].fillna('1900-01-01T00:00:00.000Z', inplace=True)
+				assets_df[i] = assets_df[i].apply(lambda x: pd.to_datetime(x))
+			except:
+				logging.warning("Fill NA failed for column: {}".format(i))
 		return assets_df
 
 
@@ -841,7 +847,7 @@ class salesforceEinsteinAnalytics(object):
 						attempts += 1
 						logging.warning("Unexpected error:", sys.exc_info()[0])
 						logging.warning("Trying again...")
-				apps_df = apps_df.append(np_df, ignore_index=True)
+				apps_df = pd.concat([apps_df,np_df], ignore_index=True)
 
 			if verbose == True:
 				print('Getting asset counts for '+len(apps_df['id'].tolist())+' apps.') 
@@ -883,7 +889,7 @@ class salesforceEinsteinAnalytics(object):
 					'Dataset_APIName': [ds['datasets'].tolist()[0][i].get('name')],
 					'Dataset_Name': [ds['datasets'].tolist()[0][i].get('label')]
 				}
-				ds_to_db = ds_to_db.append(pd.DataFrame(newRow), ignore_index=True)
+				ds_to_db = pd.concat([ds_to_db,pd.DataFrame(newRow)], ignore_index=True)
 
 		return ds_to_db
 
