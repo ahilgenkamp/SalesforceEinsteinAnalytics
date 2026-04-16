@@ -11,7 +11,7 @@ from decimal import Decimal
 import base64
 import csv
 import math
-import pkg_resources
+from importlib.metadata import version
 
 # installed libraries
 import browser_cookie3
@@ -35,7 +35,7 @@ class salesforceEinsteinAnalytics(object):
 		#Check if package is current version
 		response = requests.get('https://pypi.org/pypi/SalesforceEinsteinAnalytics/json')
 		latest_version = response.json()['info']['version']
-		curr_version = pkg_resources.get_distribution("SalesforceEinsteinAnalytics").version
+		curr_version = version("SalesforceEinsteinAnalytics")
 		if curr_version != latest_version:
 			logging.info('New version available. Use "pip install SalesforceEinsteinAnalytics --upgrade" to upgrade.')
 		
